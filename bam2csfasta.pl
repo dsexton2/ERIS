@@ -1,6 +1,32 @@
 #!/usr/bin/perl -w
 
+=head1 NAME
+
+bam2csfasta
+
+=head1 SYNOPSIS
+
+perl bam2csfasta.pl foo.csv
+
+=head1 DESCRIPTION
+
+This script takes a CSV file with sample ID / .bam path pairs.  It
+iterates on each line of this CSV file, calling a JAR to convert the
+.bam files into .csfasta files.  It also produces a new CSV file with
+sample ID / .csfasta path pairs.
+
+=head1 LICENSE
+
+This script is the property of Baylor College of Medecine.
+
+=head1 AUTHOR
+
+Updated by John McAdams - L<mailto:mcadams@bcm.edu>
+
+=cut
+
 use strict;
+use warnings;
 use Config::General;
 use Log::Log4perl;
 
@@ -29,7 +55,6 @@ while (<CSV_FILE_BAM>) {
 	}
 	$input_bam_file =~ s/\.sorted\.dups\.rg//g;
 	(my $output_csfasta_file = $input_bam_file) =~ s/bam$/csfasta/g;
-	$debug_log->debug("Generating $output_csfasta_file from $input_bam_file\n");
 	my $command = $config{"java"}." -Xmx2G -jar ".$config{"bam2csfastaJAR"}.
 		" $input_bam_file".
 		" >".
