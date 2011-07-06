@@ -29,13 +29,13 @@ use Log::Log4perl;
 my %config = new Config::General("tertiary_pipeline.cfg")->getall;
 
 Log::Log4perl->init("log4perl.cfg");
-my $errorLog = Log::Log4perl->get_logger("errorLogger");
-my $debugLog = Log::Log4perl->get_logger("debugLogger");
+my $error_log = Log::Log4perl->get_logger("errorLogger");
+my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 my @files = glob("*.birdseed.data.txt");
 my $size = @files;
 
-if ($size == 0) { $errorLog->error("no *.birdseed.data.txt files found in local directory\n"); exit; }
+if ($size == 0) { $error_log->error("no *.birdseed.data.txt files found in local directory\n"); exit; }
 
 my $cmd = '';
 foreach my $file (@files) {
@@ -47,8 +47,8 @@ foreach my $file (@files) {
 	" SD=".$config{"SEQUENCE_DICTIONARY"}.
 	" R=".$config{"REFERENCE"}.
 	" O=$file.geli";
-  $debugLog->debug("building .geli for $file\n");
-  $debugLog->debug("$cmd\n");
+  $debug_log->debug("building .geli for $file\n");
+  $debug_log->debug("$cmd\n");
   system("$cmd");
 
   # build bs file from geli
@@ -57,7 +57,7 @@ foreach my $file (@files) {
 	" I=$file.geli".
 	" >& ".
 	" $file.bs";
-  $debugLog->debug("building .bs for $file\n");
-  $debugLog->debug("$cmd\n");
+  $debug_log->debug("building .bs for $file\n");
+  $debug_log->debug("$cmd\n");
   system("$cmd");
 }
