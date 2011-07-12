@@ -85,11 +85,13 @@ sub path {
 
 sub _get_file_list_ {
 	my $self = shift;
-	my @files = glob($self->path."/*.birdseed.data.txt");
+	my $file_extension = "";
+	if (@_) { $file_extension = shift; }
+	my @files = glob($self->path."/*".$file_extension);
 	my $size = @files;
 
 	if ($size == 0) {
-		$error_log->error("no *.birdseed.data.txt files found in ".$self->path."\n");
+		$error_log->error("no ".$file_extension." files found in ".$self->path."\n");
 		exit;
 	}
 	return @files;
@@ -98,7 +100,7 @@ sub _get_file_list_ {
 sub build_geli {
 	my $self = shift;
 	my %config = $self->config;
-	my @files = $self->_get_file_list_;
+	my @files = $self->_get_file_list_(".birdseed.data.txt");
 	my $cmd = '';
 
 	foreach my $file (@files) {
@@ -119,14 +121,14 @@ sub build_geli {
 sub build_bs {
 	my $self = shift;
 	my %config = $self->config;
-	my @files = $self->_get_file_list_;
+	my @files = $self->_get_file_list_(".geli");
 	my $cmd = '';
 
 	foreach my $file (@files) {
 		# build bs file from geli
 		$cmd = $config{"java"}." -jar ".$config{"GeliToTextExtendedJAR"}.
 			" OUTPUT_LIKELIHOODS=".$config{"OUTPUT_LIKELIHOODS"}.
-			" I=$file.geli".
+			" I=$file".
 			" >& ".
 			" $file.bs";
 		$debug_log->debug("building .bs for $file\n");
