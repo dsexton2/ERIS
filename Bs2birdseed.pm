@@ -63,26 +63,32 @@ sub new {
 	my $self = {};
 	$self->{CONFIG} = ();
 	$self->{PATH} = undef;
+	$self->{PROJECTNAME} = undef;
 	bless($self);
 	return $self;
 }
 
-sub config {
+sub path {
 	my $self = shift;
-	if (@_) { %{ $self->{CONFIG} } = @_; }
-	return %{ $self->{CONFIG} };
+	if (@_) { $self->{PATH} = shift; }
+	return $self->{PATH};
+}
+
+sub project_name {
+	my $self = shift;
+	if (@_) { $self->{PROJECTNAME} = shift; }
+	return $self->{PROJECTNAME};
 }
 
 sub _get_file_list_ {
 	my $self = shift;
-	my %config = $self->config;
 	my $file_extension = "";
 	if (@_) { $file_extension = shift; }
-	my @files = glob($config{"birdseed_dir"}."/*".$file_extension);
+	my @files = glob($self->path."/*".$file_extension);
 	my $size = @files;
 
 	if ($size == 0) {
-		$error_log->error("no ".$file_extension." files found in ".$config{"birdseed_dir"}."\n");
+		$error_log->error("no ".$file_extension." files found in ".$self->path."\n");
 		exit;
 	}
 	return @files;
@@ -115,11 +121,10 @@ sub convert_bs_to_birdseed {
 
 sub move_birdseed_to_project_dir {
 	my $self = shift;
-	my %config = $self->config;
-	if (-e $config{"birdseed_dir"}) {
+	if (-e $self->path."/".$self->project_name) {
 		my @files = $self->_get_file_list_(".birdseed");
 		foreach my $file (@files) {
-			move($file, $config{"birdseed_dir"}."/".$config{"project_name"});
+			move($file, $self->path."/".$self->project_name);
 		}
 	}
 }
