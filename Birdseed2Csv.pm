@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-package Concordance::Birdseed2Tsv;
+package Concordance::Birdseed2Csv;
 
 use strict;
 use warnings;
@@ -21,7 +21,7 @@ sub path {
 	return $self->{PATH};
 }
 
-sub do_things_again {
+sub generate_csv {
 	my $self = shift;
 	my @files = glob($self->path."*.birdseed.txt");
 	my $OUT_CUT = 10;
