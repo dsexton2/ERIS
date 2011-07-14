@@ -57,6 +57,7 @@ use strict;
 use warnings;
 use Config::General;
 use Log::Log4perl;
+use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler"';
 
 sub new {
 	my $self = {};
@@ -108,10 +109,14 @@ sub convert_bam_to_csfasta {
 			" $input_bam_file".
 			" >".
 			" $output_csfasta_file";
-		$debug_log->debug("Executing command: $command\n");
+		my $scheduler = new Concordance::Bam2csfasta::Scheduler($sample_id, $command);
+		$scheduler->setMemory(2000);
+		$scheduler->setNodeCores(2);
+		$scheduler->setPriority('normal');
+		$debug_log->debug("Submitting job with command: $command\n");
+		$scheduler->runCommand;
 		$input_bam_file =~ s/\.sorted\.dups\.rg//g;
 		print CSV_FILE_CSFASTA "$sample_id,$output_csfasta_file\n";
-		system($command);
 	}
 
 	close(CSV_FILE_BAM);
