@@ -4,6 +4,7 @@ package Concordance::BsubIlluminaEgeno;
 
 use strict;
 use warnings;
+use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler"';
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -39,11 +40,6 @@ sub submit_to_bsub {
 	my $self = shift;
 	my $e_geno_list = $self->e_geno_list;
 	my $SNP_array = $self->snp_array;
-	if ($SNP_array eq '') {
-		$error_log->error("You must specify a project directory containing the *.birdseed files!\n");
-		exit;
-	}
-	
 	open(FIN,"$e_geno_list");
 	my $i=1;
 	my @com_array;
@@ -54,14 +50,16 @@ sub submit_to_bsub {
 		my $size=@a;
 		my $temp=$a[0];
 		for (my $j=1;$j<$size;$j++) { $temp .= "#".$a[$j]; }
-		
-		my $command = "bsub -e $i.e -o $i.o -J $i-eGT-$SNP_array \"".$self->script_path." $temp $SNP_array\"\;";
+		my $command = $self->script_path." $temp $SNP_array";
 		$com_array[$i] = $command;
 		$i++;
-	
-		$debug_log->debug("Executing command: $command\n");
-		system("$command");
-		sleep(2);
+
+		my $scheduler = new Concordance::BsubIlluminaEgeno::Scheduler("$i-eGT-$SNP_array", $command);
+		$scheduler->setMemory(2000);
+		$scheduler->setNodeCores(2);
+		$scheduler->setPriority('normal');
+		$debug_log->debug("Submitting job with command: $command\n");
+		$scheduler->runCommand;
 	}
 	close(FIN);
 }
