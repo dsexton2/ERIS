@@ -80,3 +80,47 @@ sub generate_csv {
 		close(FOUT);
 	} 
 }
+
+1;
+
+=head1 NAME
+
+Concordance::Birdseed2Csv - writes specific information from .birdseed
+files to a CSV
+
+=head1 SYNOPSIS
+
+ my $birdseed = Concordance::Birdseed2Csv->new;
+ $birdseed->path("/foo/bar");
+ $birdseed->generate_csv;
+
+=head1 DESCRIPTION
+
+=head2 Methods
+
+=over 12
+
+=item C<new>
+
+Returns a new Concordance::Birdseed2Csv object.
+
+=item C<path>
+
+Gets and sets the path containing the .birdseed.txt files.
+
+=item C<generate_csv>
+
+Iterates on the .birdseed.txt files in the directory set in C<path> and
+prints output to a file with the same name and .csv appended to it.
+
+=back
+
+=head1 LICENSE
+
+This script is the property of Baylor College of Medecine.
+
+=head1 AUTHOR
+
+Updated by John McAdams - L<mailto:mcadams@bcm.edu>
+
+=cut
