@@ -97,8 +97,9 @@ sub build_geli_and_bs {
 	$self->__read_and_validate_input__("sequence_dictionary_path", '\w+.dict$');
 	$self->__read_and_validate_input__("reference_path", '\w+.fasta$');
 	$self->__read_and_validate_input__("output_likelihoods", 'False|True');
-	#$build->build_geli;
-	#$build->build_bs;
+	$build->config($self->config);
+	$build->build_geli;
+	$build->build_bs;
 }
 
 sub bs_2_birdseed {
@@ -143,7 +144,7 @@ sub bam_2_csfasta {
 	my $bam = Concordance::Bam2csfasta->new;
 	$bam->config($self->config);
 	$bam->csv_file($self->__read_and_validate_input__("bam_csv_file", '\w+.csv'));
-	#$bam->convert_bam_to_csfasta;
+	$bam->convert_bam_to_csfasta;
 }
 
 sub change_aa_to_0 {
@@ -195,3 +196,136 @@ sub execute {
 }
 
 1;
+
+=head1 NAME
+
+Concordance::TUI - user interface to execute the concordance pipeline
+
+=head1 SYNOPSIS
+
+ my $tui = Concordance::TUI->new;
+ $tui->config(%config);
+ $tui->config_file("config.cfg");
+ $tui->execute;
+
+=head1 DESCRIPTION
+
+This module provides a TUI (text user interface) to facilitate operation
+of the concordance pipeline, in part or in whole.  It prompts the user
+to indicate which operations to perform and for the parameters required
+by each operation.  It writes all relevant parameters, i.e.
+configuration values, to a run-specific configuration file for use in
+debugging.
+
+=head2 Methods
+
+=over 12
+
+=item C<new>
+
+Returns a new Concordance::TUI instance.
+
+=item C<config>
+
+Accessor/mutator method for a General::Config object, containing
+run-independent configuration values.
+
+=item C<config_file>
+
+Accessor/mutator method for an instance-specific configuration file, to
+which all instance-specific configuration values shall be written.
+
+Example:
+
+ $tui->config_file("/foo/bar.cfg");
+ $config_path = $tui->config_file;
+
+=item C<__read_and_validate_input__>
+
+Private utility method to prompt for user input and validate according to a
+regex provided.  Returns the validated input
+
+Example:
+
+ $input = __read_and_validate__input("Enter CSV path: ", '\w+.csv');
+
+=item C<__add_to_hash__>
+
+Private method to add key/value pairs to the configuration value hash.
+
+Example:
+
+ $self->__add_to_hash__("key", "value");
+
+=item C<__test_parm__>
+
+
+
+=item C<__write_config_file__>
+
+Private method to print sorted instance-specific configuration values to
+the file indicated in C<config_file>.
+
+Example:
+
+ $self->__write_config_file__;
+
+=item C<build_geli_and_bs>
+
+Wrapper method to call Concordance::BuildGeliAndBS module, prompting the
+user for the necessary parameters.
+
+Example:
+
+ $self->build_geli_and_bs;
+
+=item C<bs_2_birdseed>
+
+
+
+=item C<egt_ill_prep>
+
+
+
+=item C<msub_illumina_egeno>
+
+
+
+=item C<birdseed_2_csv>
+
+
+
+=item C<bam_2_csfasta>
+
+
+
+=item C<change_aa_to_0>
+
+
+=item C<__print_usage__>
+
+Prints a usage message to allow the user to select the desired tasks.
+
+Example:
+
+ __print_usage__;
+
+=item C<execute>
+
+Main entry point for the module.
+
+Example:
+
+ $tui->execute;
+
+=back
+
+=head1 LICENSE
+
+This script is the property of Baylor College of Medicine.
+
+=head1 AUTHOR
+
+Updated by John McAdams - L<mailto:mcadams@bcm.edu>
+
+=cut
