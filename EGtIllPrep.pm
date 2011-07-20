@@ -32,7 +32,6 @@ sub output_txt_path {
 
 sub generate_fastq_list {
 	my $self = shift;
-	#my %config = $self->config;
 	my $inFile = $self->input_csv_path;
 	open(inFP,"<$inFile");
 	open (OUTFILE, "> ".$self->output_txt_path);
@@ -94,3 +93,44 @@ sub generate_fastq_list {
 }
 
 1;
+
+=head1 NAME
+
+Concordance::EGtIllPrep - generate list of .fastq sequence files
+
+=head1 SYNOPSIS
+
+ my $EGtIllPrep = Concordance::EGtIllPrep->new;
+ $EGtIllPrep->input_csv_path("/foo/bar.csv");
+ $EGtIllPrep->output_txt_path("/foo/bar.txt");
+ $EGtIllPrep->generate_fastq_list;
+
+=head1 DESCRIPTION
+
+=head2 Methods
+
+=over 12
+
+=item C<new>
+
+Returns a new Concordance::EGtIllPrep object.
+
+=item C<input_csv_path>
+
+Gets and sets the path of the CSV file 
+
+=item C<output_txt_path>
+
+=item C<generate_fastq_list>
+
+=back
+
+=head1 LICENSE
+
+This script is the property of Baylor College of Medicine.
+
+=head1 AUTHOR
+
+Updated by John McAdams - L<mailto:mcadams@bcm.edu>
+
+=cut
