@@ -12,7 +12,9 @@ use Concordance::Bs2birdseed;
 use Concordance::BsubIlluminaEgeno;
 use Concordance::BuildGeliAndBS;
 use Concordance::Change_AA_to_0;
+use Concordance::EGenoSolid;
 use Concordance::EGtIllPrep;
+use Concordance::Judgement;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -155,6 +157,24 @@ sub change_aa_to_0 {
 	#$change->change_aa_to_0;
 }
 
+sub egeno_solid {
+	print "Executing SOLiD egenotyping ...\n";
+	my $self = shift;
+	my $egeno = Concordance::EGenoSolid->new;
+	$egeno->input_file_path($self->__read_and_validate_input__("egenosolid_input_file_path", '[^\0]+'));
+	$egeno->output_file_path($self->__read_and_validate_input__("egenosolid_output_file_path", '[^\0]+'));
+	#$egeno->execute;
+}
+
+sub judgement {
+	print "Judging concordance analysis ...\n";
+	my $self = shift;
+	my $judgement = Concordance::Judgement->new;
+	$judgement->project_name($self->__read_and_validate_input__("judgement_project_name", '\w+'));
+	$judgement->input_csv_path($self->__read_and_validate_input__("judgement_csv_path", '\w+.csv'));
+	#$judgement->execute;
+}
+
 sub __print_usage__ {
 	print "\n".
 		"[1] Run entire Illumina concordance process.\n".
@@ -165,6 +185,8 @@ sub __print_usage__ {
 		"[6] Execute eGT Illumina preparation.\n".
 		"[7] Execute Illumina eGeno msub scheduler.\n".
 		"[8] Execute Birdseed to CSV conversion.\n".
+		"[9] Execute SOLiD egenotyping.\n".
+		"[A] Judge concordance analysis.\n".
 		"[0] Exit.\n".
 		"\n";
 }
@@ -175,21 +197,27 @@ sub execute {
 	my $term = Term::ReadLine->new("user_input");
 	while (my $input = $term->readline("\nEnter (numeric) choice: ")) {
 		given ($input) {
-			when ($input == 1) {
-				$self->build_geli_and_bs;
-				$self->bs_2_birdseed;
+			when ($input eq 1) {
+				$input = $term->readline("\nDo you need to build birdseed files? [y]es or [n]o: ");
+				if ($input eq 'y' || $input eq 'Y') {
+					$self->build_geli_and_bs;
+					$self->bs_2_birdseed;
+				}
 				$self->egt_ill_prep;
 				$self->msub_illumina_egeno;
 				$self->birdseed_2_csv;
+				$self->judgement;
 			}
-			when ($input == 2) { $self->bam_2_csfasta; }
-			when ($input == 3) { $self->change_aa_to_0; }
-			when ($input == 4) { $self->build_geli_and_bs; }
-			when ($input == 5) { $self->bs_2_birdseed; }
-			when ($input == 6) { $self->egt_ill_prep; }
-			when ($input == 7) { $self->msub_illumina_egeno; }
-			when ($input == 8) { $self->birdseed_2_csv; }
-			when ($input == 0) { return; }
+			when ($input eq 2) { $self->bam_2_csfasta }
+			when ($input eq 3) { $self->change_aa_to_0 }
+			when ($input eq 4) { $self->build_geli_and_bs }
+			when ($input eq 5) { $self->bs_2_birdseed }
+			when ($input eq 6) { $self->egt_ill_prep }
+			when ($input eq 7) { $self->msub_illumina_egeno }
+			when ($input eq 8) { $self->birdseed_2_csv }
+			when ($input eq 9) { $self->egeno_solid }
+			when ($input eq "A") { $self->judgement }
+			when ($input eq 0) { return }
 		}
 		__print_usage__;
 	}
