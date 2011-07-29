@@ -13,7 +13,12 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 sub new {
 	my $self = {};
 	$self->{CONFIG} = ();
-	$self->{PATH} = undef;
+	$self->{path} = undef;
+	$self->{sample_name} = undef;
+	$self->{snp60_definition} = undef;
+	$self->{sequence_dictionary_path} = undef;
+	$self->{reference_path} = undef;
+	$self->{output_likelihoods} = undef;
 	bless($self);
 	return $self;
 }
@@ -26,8 +31,38 @@ sub config {
 
 sub path {
 	my $self = shift;
-	if (@_) { $self->{PATH} = shift; }
-	return $self->{PATH};
+	if (@_) { $self->{path} = shift; }
+	return $self->{path}; #[^\0]+
+}
+
+sub sample_name {
+	my $self = shift;
+	if (@_) { $self->{sample_name} = shift }
+	return $self->{sample_name}; #[^\0]+
+}
+
+sub snp60_definition_path {
+	my $self = shift;
+	if (@_) { $self->{snp60_definition_path} = shift }
+	return $self->{snp60_definition_path}; #\w+.csv$
+}
+
+sub sequence_dictionary_path {
+	my $self = shift;
+	if (@_) { $self->{sequence_dictionary_path} = shift }
+	return $self->{sequence_dictionary_path}; #\w+.dict$
+}
+
+sub reference_path {
+	my $self = shift;
+	if (@_) { $self->{reference_path} = shift }
+	return $self->{reference_path}; #\w+.fasta$
+}
+
+sub output_likelihoods {
+	my $self = shift;
+	if (@_) { $self->{output_likelihoods} = shift }
+	return $self->{output_likelihoods}; #False|True
 }
 
 sub _get_file_list_ {
@@ -35,8 +70,7 @@ sub _get_file_list_ {
 	my $file_extension = "";
 	if (@_) { $file_extension = shift; }
 	my @files = glob($self->path."/*".$file_extension);
-	my $size = @files;
-
+	my $size = @files; 
 	if ($size == 0) {
 		$error_log->error("no ".$file_extension." files found in ".$self->path."\n");
 		exit;
@@ -54,10 +88,10 @@ sub build_geli {
 	# covert cancer birdseed data files to geli format
 		$cmd = $config{"java"}." -jar ".$config{"cancer_birdseed_snps_to_geli_jar"}.
 		" I=$file".
-		" S=".$config{"sample_name"}.
-		" SNP60_DEFINITION=".$config{"snp60_definition_path"}.
-		" SD=".$config{"sequence_dictionary_path"}.
-		" R=".$config{"reference_path"}.
+		" S=".$self->sample_name.
+		" SNP60_DEFINITION=".$self->snp60_definition_path.
+		" SD=".$self->sequence_dictionary_path.
+		" R=".$self->reference_path.
 		" O=$file.geli";
 		$debug_log->debug("building .geli for $file\n");
 		$debug_log->debug("$cmd\n");
@@ -74,7 +108,7 @@ sub build_bs {
 	foreach my $file (@files) {
 		# build bs file from geli
 		$cmd = $config{"java"}." -jar ".$config{"geli_to_text_extended_jar"}.
-			" OUTPUT_LIKELIHOODS=".$config{"output_likelihoods"}.
+			" OUTPUT_LIKELIHOODS=".$self->output_likelihoods.
 			" I=$file".
 			" >& ".
 			" $file.bs";
@@ -82,6 +116,12 @@ sub build_bs {
 		$debug_log->debug("$cmd\n");
 		system("$cmd");
 	}
+}
+
+sub execute {
+	my $self =  shift;
+	$self->build_geli;
+	$self->build_bs;
 }
 
 1;
