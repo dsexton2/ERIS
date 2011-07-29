@@ -9,26 +9,27 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{PROJECTNAME} = undef;
-	$self->{INPUTCSVPATH} = undef;
+	$self->{project_name} = undef;
+	$self->{input_csv_path} = undef;
 	bless($self);
 	return $self;
 }
 
 sub project_name {
 	my $self = shift;
-	if (@_) { $self->{PROJECTNAME} = shift; }
-	return $self->{PROJECTNAME};
+	if (@_) { $self->{project_name} = shift; }
+	return $self->{project_name}; #[^\0]+
 }
 
 sub input_csv_path {
 	my $self = shift;
-	if (@_) { $self->{INPUTCSVPATH} = shift }
-	return $self->{INPUTCSVPATH};
+	if (@_) { $self->{input_csv_path} = shift }
+	return $self->{input_csv_path}; #\w+.csv$
 }
 
 sub execute {
 	my $self = shift;
+	print "Executing with parms ".$self->project_name." and ".$self->input_csv_path."\n";
 	my $judgement = new Concordance::Judgement::JudgeJudy($self->project_name);
 	$judgement->set_file($self->input_csv_path);
 	$debug_log->debug("Judging concordance analysis for project ".$self->project_name." using file ".$self->input_csv_path."\n");
