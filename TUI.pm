@@ -19,6 +19,8 @@ use Concordance::Judgement;
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
+my %pipeline_params = ();
+
 sub new {
 	my $self = {};
 	$self->{CONFIG} = ();
@@ -37,6 +39,30 @@ sub config_file {
 	my $self = shift;
 	if (@_) { $self->{CONFIGFILE} = shift; }
 	return $self->{CONFIGFILE};
+}
+
+sub __get_params__ {
+	# reads in the parameters from the metadata, and parses the data in
+	# as a hash of hashes, with the following structure:
+	# %hash = { class_name => %hash2 { param => validating_regex } }
+	my $self = shift;
+	my %config = $self->config;
+	if (-e $config{"metadata_file"}) {
+		open(FIN, $config{"metadata_file"});
+		my @lines = <FIN>;
+		my $key = undef;
+		foreach my $line (@lines) {
+			chomp($line);
+			if ($line =~ m/^\w/) {
+				$key = $line;
+				$pipeline_params{$key} = ();
+				next;
+			}
+			$line =~ m/\t(.*)\t(.*)$/;
+			$pipeline_params{$key}{$1} = "$2";
+		}
+		close(FIN);
+	}
 }
 
 sub __read_and_validate_input__ {
@@ -92,87 +118,71 @@ sub __write_config_file__ {
 sub build_geli_and_bs {
 	print "\nExecuting .birdseed.data.txt=>.geli=>.bs conversion...\n";
 	my $self = shift;
-	my $build = Concordance::BuildGeliAndBS->new;
-	$build->path($self->__read_and_validate_input__("birdseed_data_txt_dir", '[^\0]+'));
-	$self->__read_and_validate_input__("sample_name", '[^\0]+');
-	$self->__read_and_validate_input__("snp60_definition_path", '\w+.csv$');
-	$self->__read_and_validate_input__("sequence_dictionary_path", '\w+.dict$');
-	$self->__read_and_validate_input__("reference_path", '\w+.fasta$');
-	$self->__read_and_validate_input__("output_likelihoods", 'False|True');
-	$build->config($self->config);
-	$build->build_geli;
-	$build->build_bs;
+	$self->set_instance_members("Concordance::BuildGeliAndBS", "pass_config");
 }
 
 sub bs_2_birdseed {
 	print "\nExecuting .bs=>.birdseed conversion ...\n";
 	my $self = shift;
-	my $bs = Concordance::Bs2birdseed->new;
-	$bs->path($self->__read_and_validate_input__("bs_file_dir", '[^\0]+'));
-	$bs->project_name($self->__read_and_validate_input__("project_name", '[^\0]+'));
-	#$bs->convert_bs_to_birdseed;
-	#$bs->move_birdseed_to_project_dir;
+	$self->set_instance_members("Concordance::Bs2birdseed");
 }
 
 sub egt_ill_prep {
 	print "Executing eGT Illumina preparation ...\n";
 	my $self = shift;
-	my $egt = Concordance::EGtIllPrep->new;
-	$egt->input_csv_path($self->__read_and_validate_input__("egt_ill_prep_input_csv_path", '\w+.csv$'));
-	$egt->output_txt_path($self->__read_and_validate_input__("egt_ill_prep_output_txt_path", '\w+.txt$'));
-	#$egt->generate_fastq_list;
+	$self->set_instance_members("Concordance:EGtIllPrep");
 }
 
 sub msub_illumina_egeno {
 	print "Executing Illumina job submissions to msub ...\n";
 	my $self = shift;
-	my $bsub = Concordance::BsubIlluminaEgeno->new;
-	$bsub->e_geno_list($self->__read_and_validate_input__("egeno_list_path", '\w+.fastq'));
-	$bsub->snp_array($self->__read_and_validate_input__("snp_array_dir", '[^\0]+'));
-	#$bsub->submit_to_bsub;
+	$self->set_instance_members("Concordance::BsubIlluminaEgeno");
 }
 
 sub birdseed_2_csv {
 	print "Executing .birdseed=>CSV conversion ...\n";
 	my $self = shift;
-	my $b2c = Concordance::Birdseed2Csv->new;
-	$b2c->path($self->__read_and_validate_input__("birdseed_txt_dir", '[^\0]+'));
-	#$b2c->generate_csv;
+	$self->set_instance_members("Concordance::Birdseed2Csv");
 }
 
 sub bam_2_csfasta {
 	print "Executing .bam=>.csfasta conversion ...\n";
 	my $self = shift;
-	my $bam = Concordance::Bam2csfasta->new;
-	$bam->config($self->config);
-	$bam->csv_file($self->__read_and_validate_input__("bam_csv_file", '\w+.csv'));
-	$bam->convert_bam_to_csfasta;
+	$self->set_instance_members("Concordance::Bam2csfasta", "pass_config");
 }
 
 sub change_aa_to_0 {
 	print "Executing AA... to 0... conversion ...\n";
 	my $self = shift;
-	my $change = Concordance::Change_AA_to_0->new;
-	$change->path($self->__read_and_validate_input__("changeaato0_txt_dir", '[^\0]+'));
-	#$change->change_aa_to_0;
+	$self->set_instance_members("Concordance::Change_AA_to_0");
 }
 
 sub egeno_solid {
 	print "Executing SOLiD egenotyping ...\n";
 	my $self = shift;
-	my $egeno = Concordance::EGenoSolid->new;
-	$egeno->input_file_path($self->__read_and_validate_input__("egenosolid_input_file_path", '[^\0]+'));
-	$egeno->output_file_path($self->__read_and_validate_input__("egenosolid_output_file_path", '[^\0]+'));
-	#$egeno->execute;
+	$self->set_instance_members("Concordance::EGenoSolid");
 }
 
 sub judgement {
 	print "Judging concordance analysis ...\n";
 	my $self = shift;
-	my $judgement = Concordance::Judgement->new;
-	$judgement->project_name($self->__read_and_validate_input__("judgement_project_name", '\w+'));
-	$judgement->input_csv_path($self->__read_and_validate_input__("judgement_csv_path", '\w+.csv'));
-	#$judgement->execute;
+	$self->set_instance_members("Concordance::Judgement");
+}
+
+sub set_instance_members {
+	my $self = shift;
+	my $package = shift;
+	my $pass_config_flag = shift;
+	my $instance = $package->new;
+	(my $class = $package) =~ s/^\w+:://g;
+	my %params_and_regexes = %{ $pipeline_params{$class} };
+	foreach my $param (keys %params_and_regexes) {
+		if (!$self->{CONFIG}{$param}) {
+			$instance->$param($self->__read_and_validate_input__($param, $params_and_regexes{$param}));
+		}
+	}
+	if ($pass_config_flag) { $instance->config($self->config) }
+	#$instance->execute;
 }
 
 sub __print_usage__ {
@@ -194,6 +204,7 @@ sub __print_usage__ {
 sub execute {
 	my $self = shift;
 	__print_usage__;
+	$self->__get_params__;
 	my $term = Term::ReadLine->new("user_input");
 	while (my $input = $term->readline("\nEnter (numeric) choice: ")) {
 		given ($input) {
@@ -354,6 +365,6 @@ This script is the property of Baylor College of Medicine.
 
 =head1 AUTHOR
 
-Updated by John McAdams - L<mailto:mcadams@bcm.edu>
+John McAdams - L<mailto:mcadams@bcm.edu>
 
 =cut
