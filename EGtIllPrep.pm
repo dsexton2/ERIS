@@ -12,25 +12,25 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{INPUT_CSV_PATH} = undef;
-	$self->{OUTPUT_TXT_PATH} = undef;
+	$self->{input_csv_path} = undef;
+	$self->{output_txt_path} = undef;
 	bless($self);
 	return $self;
 }
 
 sub input_csv_path {
 	my $self = shift;
-	if (@_) { $self->{INPUT_CSV_PATH} = shift; }
-	return $self->{INPUT_CSV_PATH};
+	if (@_) { $self->{input_csv_path} = shift; }
+	return $self->{input_csv_path}; #\w+.csv$
 }
 
 sub output_txt_path {
 	my $self = shift;
-	if (@_) { $self->{OUTPUT_TXT_PATH} = shift; }
-	return $self->{OUTPUT_TXT_PATH};
+	if (@_) { $self->{output_txt_path} = shift; }
+	return $self->{output_txt_path}; #\w+.txt$
 }
 
-sub generate_fastq_list {
+sub execute {
 	my $self = shift;
 	my $inFile = $self->input_csv_path;
 	open(inFP,"<$inFile");
@@ -103,7 +103,7 @@ Concordance::EGtIllPrep - generate list of .fastq sequence files
  my $EGtIllPrep = Concordance::EGtIllPrep->new;
  $EGtIllPrep->input_csv_path("/foo/bar.csv");
  $EGtIllPrep->output_txt_path("/foo/bar.txt");
- $EGtIllPrep->generate_fastq_list;
+ $EGtIllPrep->execute;
 
 =head1 DESCRIPTION
 
@@ -121,7 +121,7 @@ Gets and sets the path of the CSV file
 
 =item C<output_txt_path>
 
-=item C<generate_fastq_list>
+=item C<execute>
 
 =back
 
