@@ -13,6 +13,7 @@ use Concordance::BsubIlluminaEgeno;
 use Concordance::BuildGeliAndBS;
 use Concordance::Change_AA_to_0;
 use Concordance::EGenoSolid;
+use Concordance::EGenotypingConcordanceMsub;
 use Concordance::EGtIllPrep;
 use Concordance::Judgement;
 
@@ -161,6 +162,12 @@ sub egeno_solid {
 	print "Executing SOLiD egenotyping ...\n";
 	my $self = shift;
 	$self->set_instance_members("Concordance::EGenoSolid");
+}
+
+sub egenotyping_concordance_msub {
+	print "";
+	my $self = shift;
+	$self->set_instance_members("Concordance::EGenotypingConcordanceMsub");
 }
 
 sub judgement {
