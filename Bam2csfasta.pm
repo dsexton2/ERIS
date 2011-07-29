@@ -25,7 +25,7 @@ sub config {
 sub csv_file {
 	my $self = shift;
 	if (@_) { $self->{csv_file} = shift; }
-	return $self->{csv_file};
+	return $self->{csv_file}; #\w+.csv$
 }
 
 sub execute {
