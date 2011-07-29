@@ -11,32 +11,32 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{EGENOLIST} = undef;
-	$self->{SNPARRAY} = undef;
-	$self->{SCRIPTPATH} = undef;
+	$self->{egeno_list} = undef;
+	$self->{snp_array} = undef;
+	$self->{script_path} = undef;
 	bless($self);
 	return $self;
 }
 
 sub e_geno_list {
 	my $self = shift;
-	if (@_) { $self->{EGENOLIST} = shift; }
-	return $self->{EGENOLIST};
+	if (@_) { $self->{egeno_list} = shift; }
+	return $self->{egeno_list}; #\w+.fastq$
 }
 
 sub snp_array {
 	my $self = shift;
-	if (@_) { $self->{SNPARRAY} = shift; }
-	return $self->{SNPARRAY};
+	if (@_) { $self->{snp_array} = shift; }
+	return $self->{snp_array}; #[^\0]+
 }
 
 sub script_path {
 	my $self = shift;
-	if (@_) { $self->{SCRIPTPATH} = shift; }
-	return $self->{SCRIPTPATH};
+	if (@_) { $self->{script_path} = shift; }
+	return $self->{script_path}; #\w+.pl$
 }
 
-sub submit_to_bsub {
+sub execute {
 	my $self = shift;
 	my $e_geno_list = $self->e_geno_list;
 	my $SNP_array = $self->snp_array;
