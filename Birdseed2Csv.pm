@@ -10,18 +10,18 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{PATH} = undef;
+	$self->{path} = undef;
 	bless($self);
 	return $self;
 }
 
 sub path {
 	my $self = shift;
-	if (@_) { $self->{PATH} = shift; }
-	return $self->{PATH};
+	if (@_) { $self->{path} = shift; }
+	return $self->{path}; #[^\0]+
 }
 
-sub generate_csv {
+sub execute {
 	my $self = shift;
 	my @files = glob($self->path."*.birdseed.txt");
 	my $OUT_CUT = 10;
