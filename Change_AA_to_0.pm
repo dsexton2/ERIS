@@ -27,18 +27,18 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{PATH} = undef;
+	$self->{path} = undef;
 	bless($self);
 	return $self;
 }
 
 sub path {
 	my $self = shift;
-	if (@_) { $self->{PATH} = shift; }
-	return $self->{PATH};
+	if (@_) { $self->{path} = shift; }
+	return $self->{path}; #[^\0]+
 }
 
-sub change_aa_to_0 {
+sub execute {
 	my $self = shift;
 
 	my @files=glob($self->path."/*.txt"); #Take in all text files
