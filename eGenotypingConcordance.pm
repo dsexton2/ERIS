@@ -2,7 +2,9 @@ package Concordance::eGenotypingConcordance;
 
 use warnings;
 use strict;
+use diagnostics;
 use Config::General;
+use Data::Dumper;
 use Log::Log4perl;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
@@ -57,6 +59,11 @@ sub probe_file {
 	return "/stornext/snfs0/next-gen/yw14-scratch/AFFY_6-CS-best.egp";
 }
 
+sub debug_file {
+	my $self = shift;
+	return "/users/p-qc/concordance/debug/".$self->output_file."_DEBUG";
+}
+
 my %color_space=('A0'=>'A','A1'=>'C','A2'=>'G','A3'=>'T','C1'=>'A','C0'=>'C','C3'=>'G','C2'=>'T','G2'=>'A','G3'=>'C','G0'=>'G','G1'=>'T','T3'=>'A','T2'=>'C','T1'=>'G','T0'=>'T','A.'=>'N','G.'=>'N','T.'=>'N','C.'=>'N','N.'=>'N','N3'=>'A','N2'=>'C','N1'=>'G','N0'=>'T');
 my @chr_array=("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y","MT");
 
@@ -65,7 +72,7 @@ sub populate_ref_and_alt_hashes {
 	my $self = shift;
 	$debug_log->debug("Populating [alt[_base]|ref[_base]] hashes ...\n");
 	open(PROBE_FILE_IN, $self->probe_file) ||
-		die $error_log->error("Failed to open file :".$self->asiap_file."\n");
+		die $error_log->error("Failed to open file :".$self->probe_file."\n");
 	while(<PROBE_FILE_IN>) {
 		chomp;
 		my @a=split(/\t/);
@@ -84,6 +91,10 @@ sub populate_ref_and_alt_hashes {
 	if (scalar keys %alt == 0) { $warn_log->warn("%alt contains no items\n") }
 	if (scalar keys %ref_base == 0) { $warn_log->warn("%ref_base contains no items\n") }
 	if (scalar keys %alt_base == 0) { $warn_log->warn("%alt_base contains no items\n") }
+	#open(DEBUG, "> ".$self->debug_file."_populate_ref_and_alt_hashes");
+	#my $d = Data::Dumper->new([\%probes, \%ref, \%alt, \%ref_base, \%alt_base], [qw(probes ref alt ref_base alt_base)]);
+	#print DEBUG $d->Dump;
+	#close(DEBUG);
 }
 
 my $SNP_color="";
@@ -131,6 +142,9 @@ sub populate_SNP_color_found_hashes {
 	$debug_log->debug("Finished populating found hash.\n");
 	# ensure %found has been populated
 	if (scalar keys %found == 0) { $warn_log->warn("%found contains no items\n") }
+	open(DEBUG, "> ".$self->debug_file."_populate_SNP_color_found_hashes");
+	print DEBUG Data::Dumper->Dump([\%found], [qw(found)]);
+	close(DEBUG);
 }
 
 sub write_chr_array {
@@ -175,6 +189,9 @@ sub populate_AB_BB_freq_hashes {
 	$debug_log->debug("Finished populating AB and BB frequency hashes.\n");
 	if (scalar keys %AB_freq == 0) { $warn_log->warn("%AB_freq contains no items\n") }
 	if (scalar keys %BB_freq == 0) { $warn_log->warn("%BB_freq contains no items\n") }
+	open(DEBUG, "> ".$self->debug_file."_populate_AB_BB_freq_hashes");
+	print DEBUG Data::Dumper->Dump([\%AB_freq, \%BB_freq], [qw(AB_freq BB_freq)]);
+	close(DEBUG);
 }
 
 my %fre;
@@ -188,8 +205,8 @@ my $total_num=0;
 sub populate_fre_hash {
 	my $self = shift;
 	$debug_log->debug("Populating frequency hash ...\n");
-	open(FIN,"$'.csvoutfile") ||
-		die $error_log->error("Failed to open file: csvoutfile\n");
+	open(FIN,$self->output_file) ||
+		die $error_log->error("Failed to open file: ".$self->output_file."\n");
 	my $genotype = undef;
 	while(<FIN>) {
 		chomp;
@@ -236,6 +253,9 @@ sub populate_fre_hash {
 	close(FIN);
 	$debug_log->debug("Finished populating frequency hash.\n");
 	if (scalar keys %fre == 0) { $warn_log->warn("%fre contains no items\n") }
+	open(DEBUG, "> ".$self->debug_file."_populate_fre_hash");
+	print DEBUG Data::Dumper->Dump([\%fre], [qw(fre)]);
+	close(DEBUG);
 }
 
 sub big_ass_loop {
@@ -262,6 +282,7 @@ sub big_ass_loop {
 		die $error_log->error("Failed to open file for writing: ".$self->con_result_file."\n");
 
 	foreach my $file(@files) {
+		
 		$cor_num=0;
 		$non_num=0;
 		$corcondance=0;
