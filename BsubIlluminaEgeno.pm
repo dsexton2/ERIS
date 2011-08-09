@@ -1,10 +1,8 @@
-#! /usr/bin/perl -w
-
 package Concordance::BsubIlluminaEgeno;
 
 use strict;
 use warnings;
-use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler"';
+use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -18,10 +16,10 @@ sub new {
 	return $self;
 }
 
-sub e_geno_list {
+sub egeno_list {
 	my $self = shift;
 	if (@_) { $self->{egeno_list} = shift; }
-	return $self->{egeno_list}; #\w+.fastq$
+	return $self->{egeno_list}; #\w+.txt$
 }
 
 sub snp_array {
@@ -38,9 +36,9 @@ sub script_path {
 
 sub execute {
 	my $self = shift;
-	my $e_geno_list = $self->e_geno_list;
+	my $egeno_list = $self->egeno_list;
 	my $SNP_array = $self->snp_array;
-	open(FIN,"$e_geno_list");
+	open(FIN,"$egeno_list");
 	my $i=1;
 	my @com_array;
 	while(<FIN>)
