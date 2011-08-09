@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use Config::General;
 use Log::Log4perl;
-use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler"';
+use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
 
 sub new {
 	my $self = {};
