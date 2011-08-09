@@ -13,25 +13,25 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{PATH} = undef;
-	$self->{PROJECTNAME} = undef;
+	$self->{path} = undef;
+	$self->{project_name} = undef;
 	bless($self);
 	return $self;
 }
 
 sub path {
 	my $self = shift;
-	if (@_) { $self->{PATH} = shift; }
-	return $self->{PATH};
+	if (@_) { $self->{path} = shift; }
+	return $self->{path}; #[^\0]+
 }
 
 sub project_name {
 	my $self = shift;
-	if (@_) { $self->{PROJECTNAME} = shift; }
-	return $self->{PROJECTNAME};
+	if (@_) { $self->{project_name} = shift; }
+	return $self->{project_name}; #[^\0]+
 }
 
-sub _get_file_list_ {
+sub __get_file_list__ {
 	my $self = shift;
 	my $file_extension = "";
 	if (@_) { $file_extension = shift; }
@@ -45,9 +45,9 @@ sub _get_file_list_ {
 	return @files;
 }
 
-sub convert_bs_to_birdseed {
+sub execute {
 	my $self = shift;
-	my @files=$self->_get_file_list_(".bs");
+	my @files=$self->__get_file_list__(".bs");
 	my $size = @files;
 
 	foreach my $file (@files) {
@@ -73,7 +73,7 @@ sub convert_bs_to_birdseed {
 sub move_birdseed_to_project_dir {
 	my $self = shift;
 	if (-e $self->path."/".$self->project_name) {
-		my @files = $self->_get_file_list_(".birdseed");
+		my @files = $self->__get_file_list__(".birdseed");
 		foreach my $file (@files) {
 			move($file, $self->path."/".$self->project_name);
 		}

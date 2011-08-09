@@ -12,8 +12,8 @@ foreach my $file (@files) {
 	my @params = ();
 	while (my $line = <FIN>) {
 		chomp($line);
-		if ($line =~ m/\$self->{(\w+)};$/) {
-			push(@params, $1);
+		if ($line =~ m/\$self->{(\w+)};\s#(.*)$/) {
+			push(@params, $1."\t".$2);
 		}
 	}
 	close(FIN);

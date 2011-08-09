@@ -10,35 +10,35 @@ use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Schedul
 
 sub new {
 	my $self = {};
-	$self->{CONFIG} = ();
-	$self->{CSVFILE} = undef;
+	$self->{config} = ();
+	$self->{csv_file} = undef;
 	bless($self);
 	return $self;
 }
 
 sub config {
 	my $self = shift;
-	if (@_) { %{ $self->{CONFIG} } = @_; }
-	return %{ $self->{CONFIG} };
+	if (@_) { %{ $self->{config} } = @_; }
+	return %{ $self->{config} };
 }
 
 sub csv_file {
 	my $self = shift;
-	if (@_) { $self->{CSVFILE} = shift; }
-	return $self->{CSVFILE};
+	if (@_) { $self->{csv_file} = shift; }
+	return $self->{csv_file}; #\w+.csv$
 }
 
-sub convert_bam_to_csfasta {
+sub execute {
 	my $self = shift;
 	my $error_log = Log::Log4perl->get_logger("errorLogger");
 	my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
-	if ($self->{CSVFILE} !~ /.+\.csv$/) {
+	if ($self->{csv_file} !~ /.+\.csv$/) {
 		$error_log->error("This script requires a *.csv file as an argument.\n");
 		exit;
 	}
 
-	open(CSV_FILE_BAM, $self->{CSVFILE});
+	open(CSV_FILE_BAM, $self->{csv_file});
 	open(CSV_FILE_CSFASTA, "> ".$self->csv_file.".csfasta.csv");
 
 	my %config = $self->config;

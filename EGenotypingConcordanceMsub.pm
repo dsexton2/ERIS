@@ -13,22 +13,22 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{EGENOLIST} = undef;
-	$self->{SNPARRAY} = undef;
+	$self->{egeno_list} = undef;
+	$self->{snp_array} = undef;
 	bless($self);
 	return $self;
 }
 
 sub e_geno_list {
 	my $self = shift;
-	if (@_) { $self->{EGENOLIST} = shift }
-	return $self->{EGENOLIST};
+	if (@_) { $self->{egeno_list} = shift }
+	return $self->{egeno_list}; #\w+.csv$
 }
 
 sub snp_array {
 	my $self = shift;
-	if (@_) { $self->{SNPARRAY} = shift }
-	return $self->{SNPARRAY};
+	if (@_) { $self->{snp_array} = shift }
+	return $self->{snp_array}; #[^\0]+
 }
 
 sub execute {

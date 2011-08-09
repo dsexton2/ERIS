@@ -11,22 +11,22 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{INPUTPATH} = undef;
-	$self->{OUTPUTPATH} = undef;
+	$self->{input_path} = undef;
+	$self->{output_path} = undef;
 	bless($self);
 	return $self;
 }
 
-sub input_file_path {
+sub input_path {
 	my $self = shift;
-	if (@_) { $self->{INPUTPATH} = shift }
-	return $self->{INPUTPATH};
+	if (@_) { $self->{input_path} = shift }
+	return $self->{input_path}; #[^\0]+
 }
 
-sub output_file_path {
+sub output_path {
 	my $self = shift;
-	if (@_) { $self->{OUTPUTPATH} = shift }
-	return $self->{OUTPUTPATH};
+	if (@_) { $self->{output_path} = shift }
+	return $self->{output_path}; #[^\0]+
 }
 
 sub __get_file_list__ {
@@ -46,8 +46,8 @@ sub __get_file_list__ {
 
 sub execute {
 	my $self = shift;
-	open (FIN, $self->input_file_path);
-	open (FOUT, ">".$self->output_file_path);
+	open (FIN, $self->input_path);
+	open (FOUT, ">".$self->output_path);
 	while (<FIN>) {
 		chomp;
 		my @csv_list = split(/,/, $_);
