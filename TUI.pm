@@ -131,7 +131,7 @@ sub bs_2_birdseed {
 sub egt_ill_prep {
 	print "Executing eGT Illumina preparation ...\n";
 	my $self = shift;
-	$self->set_instance_members("Concordance:EGtIllPrep");
+	$self->set_instance_members("Concordance::EGtIllPrep");
 }
 
 sub msub_illumina_egeno {
@@ -189,7 +189,7 @@ sub set_instance_members {
 		}
 	}
 	if ($pass_config_flag) { $instance->config($self->config) }
-	#$instance->execute;
+	$instance->execute;
 }
 
 sub __print_usage__ {
