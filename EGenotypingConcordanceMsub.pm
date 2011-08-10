@@ -40,9 +40,9 @@ sub execute {
 	{
 		chomp;
 		my @a=split(/\s+/);
-		$temp=join("#",@a);
+		my $temp=join("#",@a);
 		#$command = "bsub -e $i.e -o $i.o -J $i\_eGeno\_concor.job \"/stornext/snfs0/next-gen/concordance_analysis/e-Genotyping_concordance.pl $temp $SNP_array \"\;";
-		my $command = "\"/stornext/snfs0/next-gen/concordance_analysis/e-Genotyping_concordance.pl $temp ".$self->snp_array."  " \"\;";
+		my $command = "\"/stornext/snfs0/next-gen/concordance_analysis/e-Genotyping_concordance.pl $temp ".$self->snp_array." \"\;";
 		
 		my $scheduler = new Concordance::Bam2csfasta::Scheduler("$i\_eGeno\_concor.job", $command);
 		$scheduler->setMemory(2000);
