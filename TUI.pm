@@ -75,13 +75,18 @@ sub __read_and_validate_input__ {
 		$validation_pattern = shift;
 	}
 	my $term = Term::ReadLine->new("");
-	my $input = $term->readline($prompt.": ");
-	chomp($input);
-	while ($input !~ /$validation_pattern/) {
-		print "$input failed validation on $validation_pattern\n";
-		$input = $term->readline($prompt);	
+	my $input = undef;
+	while ($input = $term->readline($prompt.": ")) {
+		chomp($input);
+		if ($input !~ /$validation_pattern/) {
+			print "$input failed validation on $validation_pattern\n";
+			next;
+		}
+		else {
+			$self->__add_to_hash__($prompt, $input);
+			last;
+		}
 	}
-	$self->__add_to_hash__($prompt, $input);
 	return $input;
 }
 
