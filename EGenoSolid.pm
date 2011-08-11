@@ -29,6 +29,10 @@ sub output_path {
 	return $self->{output_path}; #[^\0]+
 }
 
+sub error_path {
+	return "/users/p-qc/testenv/bam2csfasta_input";
+}
+
 sub __get_file_list__ {
 	my $file_extension = undef;
 	my $path = undef;
@@ -48,6 +52,7 @@ sub execute {
 	my $self = shift;
 	open (FIN, $self->input_path);
 	open (FOUT, ">".$self->output_path);
+	open (FERR, ">".$self->error_path);
 	while (<FIN>) {
 		chomp;
 		my @csv_list = split(/,/, $_);
@@ -55,37 +60,49 @@ sub execute {
 		my $path = undef;
 		my $raw = "";
 		if (@csv_list == 2) {
-			#egeno_solid.sh or #egeno_solid_merge.sh
 			$sample_id = $csv_list[0];
 			$path = $csv_list[1];
-			if ($path =~ m/results/) {
-				#non-merge
+			my $list = "";
+			if (my @files = glob($path."/input/*.csfasta")) {
+				#egeno_solid.sh
 				$path =~ /.*\/(.*)$/;
 				my $se = $1;
 				my $full_name = $sample_id."_".$se;
-				my @files = __get_file_list__($path."/input", ".csfasta");
 				foreach my $file (@files) {
-					if ($file =~ m/results/ and $file =~ m/csfasta/) {
-						$raw .= $file." ";
+					if (stat($file)) {  
+						if (readlink($file) =~ /results/ and $file =~ /csfasta/) {
+							$list.=" ".$file;
+						}
+					}
+					else {
+						$error_log->error("Bad link: $file -> ".readlink($file)."\n");
+						# print files to run bam2csfasta
+						if (my @bam_files = glob($path."/output/*.bam")) {
+							foreach my $bam_file (@bam_files) {
+								print FERR $sample_id.",".$bam_file."\n";
+							}
+						}
+						else { print STDERR "terribad $file\n" }
+						next;
 					}
 				}
-				$raw =~ s/\s+$//g;
-				print FOUT $full_name." ".$raw."\n";
+				if ($list ne "") { print FOUT $full_name." ".$list."\n" }
 			}
-			if ($path =~ m/merge/) {
-				#merge
-				$path =~ /.*\/(.*)$/;
-				my $merge = $1;
-				my $full_name = $sample_id."_".$merge;
-				foreach my $file (__get_file_list__($path, ".csfasta")) {
-					if ($file =~ m/csfasta/) {
-						$raw .= $file." ";
+			else {
+				if (mkdir($path."/input")) {
+					if (my @bam_files = glob($path."/output/*.bam")) {
+						foreach my $bam_file (@bam_files) {
+							print FERR $sample_id.",".$bam_file."\n";
+						}
 					}
 				}
-				$raw =~ s/\s+$//g;
-				print FOUT $full_name." ".$raw."\n";
+				else { print STDERR "bad $path\n" }
 			}
-		}
+			if (my @files = glob($path."/*.csfasta")) {
+				#egeno_solid_merge.sh
+				
+			}
+		}	
 		elsif (@csv_list == 3) {
 			#egeno_solid_2.sh
 			$sample_id = $csv_list[0];
@@ -93,6 +110,8 @@ sub execute {
 			$path = $csv_list[2];
 			my $full_name = $sample_id." ".$se;
 			foreach my $file (__get_file_list__($path, "*")) {
+				if (stat($file) == 0) { print "fail on $file\n" }
+
 				if ($file =~ m/results/ and $file =~ m/csfasta/) {
 					$raw .= $file." ";
 				}
@@ -106,6 +125,7 @@ sub execute {
 	}
 	close FIN;
 	close FOUT;
+	close FERR;
 }
 
 1;
