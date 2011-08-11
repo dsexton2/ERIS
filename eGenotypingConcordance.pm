@@ -6,6 +6,7 @@ use diagnostics;
 use Config::General;
 use Data::Dumper;
 use Log::Log4perl;
+use Concordance::Utils;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -19,23 +20,24 @@ my %alt_base;
 
 sub new {
 	my $self = {};
-	$self->{csfasta_path} = undef;
+	$self->{csfasta_path_list} = ();
 	$self->{snp_array_dir} = undef;
 	$self->{output_file} = undef;
 	$self->{con_result_file} = undef;
+	$self->{debug_flag} = 0;
 	bless($self);
 	return $self;
 }
 
-sub csfasta_path {
+sub csfasta_path_list {
 	my $self = shift;
-	if (@_) { $self->{csfasta_path} = shift; }
-	return $self->{csfasta_path};
+	if (@_) { @{ $self->{csfasta_path_list} } = shift }
+	return $self->{csfasta_path_list};
 }
 
 sub snp_array_dir {
 	my $self = shift;
-	if (@_) { $self->{snp_array_dir} = shift; }
+	if (@_) { $self->{snp_array_dir} = shift }
 	return $self->{snp_array_dir};
 }
 
@@ -52,16 +54,36 @@ sub con_result_file {
 }
 
 sub asiap_file {
+	#my $self = shift;
+	#if (@_) { $self->{asiap_file} = shift }
+	#return $self->{asiap_file};
 	return "/stornext/snfs0/next-gen/yw14-scratch/Array_site_info_all_positive.txt";
 }
 
 sub probe_file {
+	#my $self = shift;
+	#if (@_) { $self->{probe_file} = shift }
+	#return $self->{probe_file};
 	return "/stornext/snfs0/next-gen/yw14-scratch/AFFY_6-CS-best.egp";
 }
 
-sub debug_file {
+sub debug_flag {
 	my $self = shift;
+	if (@_) { $self->{debug_flag} = shift }
+	return $self->{debug_flag};
+}
+
+sub debug_file {
+	#my $self = shift;
+	#if (@_) { $self->{debug_file} = shift }
+	#return $self->{debug_file};
 	return "/users/p-qc/concordance/debug/".$self->output_file."_DEBUG";
+}
+
+sub birdseed_dir {
+	my $self = shift;
+	if (@_) { $self->{birdseed_dir} = shift }
+	return $self->{birdseed_dir};
 }
 
 my %color_space=('A0'=>'A','A1'=>'C','A2'=>'G','A3'=>'T','C1'=>'A','C0'=>'C','C3'=>'G','C2'=>'T','G2'=>'A','G3'=>'C','G0'=>'G','G1'=>'T','T3'=>'A','T2'=>'C','T1'=>'G','T0'=>'T','A.'=>'N','G.'=>'N','T.'=>'N','C.'=>'N','N.'=>'N','N3'=>'A','N2'=>'C','N1'=>'G','N0'=>'T');
@@ -91,10 +113,12 @@ sub populate_ref_and_alt_hashes {
 	if (scalar keys %alt == 0) { $warn_log->warn("%alt contains no items\n") }
 	if (scalar keys %ref_base == 0) { $warn_log->warn("%ref_base contains no items\n") }
 	if (scalar keys %alt_base == 0) { $warn_log->warn("%alt_base contains no items\n") }
-	#open(DEBUG, "> ".$self->debug_file."_populate_ref_and_alt_hashes");
-	#my $d = Data::Dumper->new([\%probes, \%ref, \%alt, \%ref_base, \%alt_base], [qw(probes ref alt ref_base alt_base)]);
-	#print DEBUG $d->Dump;
-	#close(DEBUG);
+	if ($self->debug_flag) {
+		open(DEBUG, "> ".$self->debug_file."_populate_ref_and_alt_hashes");
+		my $d = Data::Dumper->new([\%probes, \%ref, \%alt, \%ref_base, \%alt_base], [qw(probes ref alt ref_base alt_base)]);
+		print DEBUG $d->Dump;
+		close(DEBUG);
+	}
 }
 
 my $SNP_color="";
@@ -105,46 +129,50 @@ my $count=0;
 sub populate_SNP_color_found_hashes {
 	my $self = shift;
 	$debug_log->debug("Populating found hash ...\n");
-	open(CSFASTA_FILE_IN, $self->csfasta_path);
-	while(<CSFASTA_FILE_IN>) {
-		# lines of interest look like T32020033020112020001010022332120211101131111201103
-		# or T21023210.222230221.3213011120210220231023322113220
-		chomp;
-		if(/^>/ || /^#/)
-		{
-			next;
+	foreach my $csfasta_path ($self->csfasta_path_list) {
+		open(CSFASTA_FILE_IN, $csfasta_path);
+		while(<CSFASTA_FILE_IN>) {
+			# lines of interest look like T32020033020112020001010022332120211101131111201103
+			# or T21023210.222230221.3213011120210220231023322113220
+			chomp;
+			if(/^>/ || /^#/)
+			{
+				next;
+			}
+			my $seq=$_;
+			my $size = length($seq);
+			for(my $i=1;$i<=$size-24;$i++) {
+				my $match=substr($seq,$i,11)." ".substr($seq,$i+13,11);
+				if(exists($probes{$match})) {
+					$SNP_color = substr($seq, $i+11,2);	
+					if($SNP_color eq $ref{$match}) {
+						$SNP_base = $ref_base{$match}."0";
+					}
+					elsif($SNP_color eq $alt{$match}) {
+						$SNP_base = $alt_base{$match}."1";
+					}
+					else {
+						$SNP_base = "S3";
+					}
+					if( !exists($found{$probes{$match}})) {
+						$found{$probes{$match}} = $SNP_base;
+					}
+					else {
+						$found{$probes{$match}} .= "#".$SNP_base;
+					}
+				} 	
+			}
 		}
-		my $seq=$_;
-		my $size = length($seq);
-		for(my $i=1;$i<=$size-24;$i++) {
-			my $match=substr($seq,$i,11)." ".substr($seq,$i+13,11);
-			if(exists($probes{$match})) {
-				$SNP_color = substr($seq, $i+11,2);	
-				if($SNP_color eq $ref{$match}) {
-					$SNP_base = $ref_base{$match}."0";
-				}
-				elsif($SNP_color eq $alt{$match}) {
-					$SNP_base = $alt_base{$match}."1";
-				}
-				else {
-					$SNP_base = "S3";
-				}
-				if( !exists($found{$probes{$match}})) {
-					$found{$probes{$match}} = $SNP_base;
-				}
-				else {
-					$found{$probes{$match}} .= "#".$SNP_base;
-				}
-			} 	
-		}
+		close(CSFASTA_FILE_IN);
 	}
-	close(CSFASTA_FILE_IN);
 	$debug_log->debug("Finished populating found hash.\n");
 	# ensure %found has been populated
 	if (scalar keys %found == 0) { $warn_log->warn("%found contains no items\n") }
-	open(DEBUG, "> ".$self->debug_file."_populate_SNP_color_found_hashes");
-	print DEBUG Data::Dumper->Dump([\%found], [qw(found)]);
-	close(DEBUG);
+	if ($self->debug_flag) {
+		open(DEBUG, "> ".$self->debug_file."_populate_SNP_color_found_hashes");
+		print DEBUG Data::Dumper->Dump([\%found], [qw(found)]);
+		close(DEBUG);
+	}
 }
 
 sub write_chr_array {
@@ -189,9 +217,11 @@ sub populate_AB_BB_freq_hashes {
 	$debug_log->debug("Finished populating AB and BB frequency hashes.\n");
 	if (scalar keys %AB_freq == 0) { $warn_log->warn("%AB_freq contains no items\n") }
 	if (scalar keys %BB_freq == 0) { $warn_log->warn("%BB_freq contains no items\n") }
-	open(DEBUG, "> ".$self->debug_file."_populate_AB_BB_freq_hashes");
-	print DEBUG Data::Dumper->Dump([\%AB_freq, \%BB_freq], [qw(AB_freq BB_freq)]);
-	close(DEBUG);
+	if ($self->debug_flag) {
+		open(DEBUG, "> ".$self->debug_file."_populate_AB_BB_freq_hashes");
+		print DEBUG Data::Dumper->Dump([\%AB_freq, \%BB_freq], [qw(AB_freq BB_freq)]);
+		close(DEBUG);
+	}
 }
 
 my %fre;
@@ -253,9 +283,11 @@ sub populate_fre_hash {
 	close(FIN);
 	$debug_log->debug("Finished populating frequency hash.\n");
 	if (scalar keys %fre == 0) { $warn_log->warn("%fre contains no items\n") }
-	open(DEBUG, "> ".$self->debug_file."_populate_fre_hash");
-	print DEBUG Data::Dumper->Dump([\%fre], [qw(fre)]);
-	close(DEBUG);
+	if ($self->debug_flag) {
+		open(DEBUG, "> ".$self->debug_file."_populate_fre_hash");
+		print DEBUG Data::Dumper->Dump([\%fre], [qw(fre)]);
+		close(DEBUG);
+	}
 }
 
 sub big_ass_loop {
@@ -274,12 +306,15 @@ sub big_ass_loop {
 	my $one_mismatch_B=0;
 	my $no_match=0;
 	my $birdseed_files="/stornext/snfs0/next-gen/SNP_array/".$self->snp_array_dir."/*.birdseed";
+	# my $birdseed_files = $self->birdseed_dir;
+	my @files = Concordance::Utils->get_file_list($self->birdseed_dir, "birdseed");
 	my @files = glob("$birdseed_files");
 	if ($#files==-1) {
 		$error_log->error("There are no birdseed files in: $birdseed_files\n");
 	}
 	open(FOUT,"> ".$self->con_result_file) ||
 		die $error_log->error("Failed to open file for writing: ".$self->con_result_file."\n");
+	if ($self->debug_flag) { open(FDEBUG, "> ".$self->debug_file."_DEBUG_big_ass_loop") }
 
 	foreach my $file(@files) {
 		
@@ -316,6 +351,9 @@ sub big_ass_loop {
 				$a[0] = "chr".$a[0];
 			}
 			my $temp = $a[0]."_".$a[1];
+			if ($self->debug_flag) {
+				print FDEBUG Data::Dumper->Dump([\@a, $temp], [qw(a temp)]);
+			}
 			if(!exists($BB_freq{$temp})) {
 				next;
 			}
@@ -408,6 +446,7 @@ sub big_ass_loop {
 			print FOUT "$file\n";
 		}
 	}
+	close(FDEBUG);
 	$debug_log->debug("Finished big ass loop.\n");
 }
 
