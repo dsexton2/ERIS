@@ -63,7 +63,7 @@ sub execute {
 			" >& ".
 			" $file.bs";
 		$file =~ /.*\/(.*)\.birdseed\.data\.txt\.geli$/;
-		my $scheduler = new Concordance::BsubIlluminaEgeno::Scheduler($1."_toBS", $cmd);
+		my $scheduler = new Concordance::GeliToBs::Scheduler($1."_toBS", $cmd);
 		$scheduler->setMemory(2000);
 		$scheduler->setNodeCores(2);
 		$scheduler->setPriority('normal');

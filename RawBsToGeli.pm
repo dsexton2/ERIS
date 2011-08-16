@@ -93,7 +93,7 @@ sub execute {
 		" R=".$self->reference_path.
 		" O=$file.geli";
 		$file =~ /.*\/(.*)\.birdseed\.data\.txt$/;
-		my $scheduler = new Concordance::BsubIlluminaEgeno::Scheduler($1."_toGELI", $cmd);
+		my $scheduler = new Concordance::RawBsToGeli::Scheduler($1."_toGELI", $cmd);
 		$scheduler->setMemory(2000);
 		$scheduler->setNodeCores(2);
 		$scheduler->setPriority('normal');
