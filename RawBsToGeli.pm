@@ -1,11 +1,10 @@
-#! /usr/bin/perl -w
-
-package Concordance::BuildGeliAndBS;
+package Concordance::RawBsToGeli;
 
 use strict;
 use warnings;
 use Config::General;
 use Log::Log4perl;
+use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -78,7 +77,7 @@ sub _get_file_list_ {
 	return @files;
 }
 
-sub build_geli {
+sub execute {
 	my $self = shift;
 	my %config = $self->config;
 	my @files = $self->_get_file_list_(".birdseed.data.txt");
@@ -93,35 +92,14 @@ sub build_geli {
 		" SD=".$self->sequence_dictionary_path.
 		" R=".$self->reference_path.
 		" O=$file.geli";
-		$debug_log->debug("building .geli for $file\n");
-		$debug_log->debug("$cmd\n");
-		system("$cmd");
+		$file =~ /.*\/(.*)\.birdseed\.data\.txt$/;
+		my $scheduler = new Concordance::BsubIlluminaEgeno::Scheduler($1."_toGELI", $cmd);
+		$scheduler->setMemory(2000);
+		$scheduler->setNodeCores(2);
+		$scheduler->setPriority('normal');
+		$debug_log->debug("Submitting job for conversion to GELI with command: $cmd\n");
+		$scheduler->runCommand;
 	}
-}
-
-sub build_bs {
-	my $self = shift;
-	my %config = $self->config;
-	my @files = $self->_get_file_list_(".geli");
-	my $cmd = '';
-
-	foreach my $file (@files) {
-		# build bs file from geli
-		$cmd = $config{"java"}." -jar ".$config{"geli_to_text_extended_jar"}.
-			" OUTPUT_LIKELIHOODS=".$self->output_likelihoods.
-			" I=$file".
-			" >& ".
-			" $file.bs";
-		$debug_log->debug("building .bs for $file\n");
-		$debug_log->debug("$cmd\n");
-		system("$cmd");
-	}
-}
-
-sub execute {
-	my $self =  shift;
-	$self->build_geli;
-	$self->build_bs;
 }
 
 1;

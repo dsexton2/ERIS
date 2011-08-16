@@ -10,12 +10,13 @@ use Concordance::Bam2csfasta;
 use Concordance::Birdseed2Csv;
 use Concordance::Bs2birdseed;
 use Concordance::BsubIlluminaEgeno;
-use Concordance::BuildGeliAndBS;
 use Concordance::Change_AA_to_0;
 use Concordance::EGenoSolid;
 use Concordance::EGenotypingConcordanceMsub;
 use Concordance::EGtIllPrep;
+use Concordance::GeliToBs;
 use Concordance::Judgement;
+use Concordance::RawBsToGeli;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -121,12 +122,6 @@ sub __write_config_file__ {
 	close CONFIG_OUT;
 }
 
-sub build_geli_and_bs {
-	print "\nExecuting .birdseed.data.txt=>.geli=>.bs conversion...\n";
-	my $self = shift;
-	$self->set_instance_members("Concordance::BuildGeliAndBS", "pass_config");
-}
-
 sub bs_2_birdseed {
 	print "\nExecuting .bs=>.birdseed conversion ...\n";
 	my $self = shift;
@@ -181,6 +176,18 @@ sub judgement {
 	$self->set_instance_members("Concordance::Judgement");
 }
 
+sub raw_bs_to_geli {
+	print "Converting raw birdseed files to GELI files ...\n";
+	my $self = shift;
+	$self->set_instance_members("Concordance::RawBsToGeli", "pass_config");
+}
+
+sub geli_to_bs {
+	print "Converting GELI files to BS files ...\n";
+	my $self = shift;
+	$self->set_instance_members("Concordance::GeliToBs", "pass_config");
+}
+
 sub set_instance_members {
 	my $self = shift;
 	my $package = shift;
@@ -192,6 +199,7 @@ sub set_instance_members {
 		if (!$self->{CONFIG}{$param}) {
 			$instance->$param($self->__read_and_validate_input__($param, $params_and_regexes{$param}));
 		}
+		else { $instance->$param($self->{CONFIG}{$param}) }
 	}
 	if ($pass_config_flag) { $instance->config($self->config) }
 	$instance->execute;
@@ -202,13 +210,14 @@ sub __print_usage__ {
 		"[1] Run entire Illumina concordance process.\n".
 		"[2] Execute Bam to Csfasta conversion.\n".
 		"[3] Execute change AA... to 0... conversion.\n".
-		"[4] Execute build GELI to BS conversion.\n".
-		"[5] Execute BS to Birdseed conversion.\n".
-		"[6] Execute eGT Illumina preparation.\n".
-		"[7] Execute Illumina eGeno msub scheduler.\n".
-		"[8] Execute Birdseed to CSV conversion.\n".
-		"[9] Execute SOLiD egenotyping.\n".
-		"[A] Judge concordance analysis.\n".
+		"[4] Convert raw birdseed files to GELI files.\n".
+		"[5] Convert GELI files to BS files.\n".
+		"[6] Execute BS to Birdseed conversion.\n".
+		"[7] Execute eGT Illumina preparation.\n".
+		"[8] Execute Illumina eGeno msub scheduler.\n".
+		"[9] Execute Birdseed to CSV conversion.\n".
+		"[A] Execute SOLiD egenotyping.\n".
+		"[B] Judge concordance analysis.\n".
 		"[0] Exit.\n".
 		"\n";
 }
@@ -233,13 +242,14 @@ sub execute {
 			}
 			when ($input eq 2) { $self->bam_2_csfasta }
 			when ($input eq 3) { $self->change_aa_to_0 }
-			when ($input eq 4) { $self->build_geli_and_bs }
-			when ($input eq 5) { $self->bs_2_birdseed }
-			when ($input eq 6) { $self->egt_ill_prep }
-			when ($input eq 7) { $self->msub_illumina_egeno }
-			when ($input eq 8) { $self->birdseed_2_csv }
-			when ($input eq 9) { $self->egeno_solid }
-			when ($input eq "A") { $self->judgement }
+			when ($input eq 4) { $self->raw_bs_to_geli }
+			when ($input eq 5) { $self->geli_to_bs }
+			when ($input eq 6) { $self->bs_2_birdseed }
+			when ($input eq 7) { $self->egt_ill_prep }
+			when ($input eq 8) { $self->msub_illumina_egeno }
+			when ($input eq 9) { $self->birdseed_2_csv }
+			when ($input eq "A") { $self->egeno_solid }
+			when ($input eq "B") { $self->judgement }
 			when ($input eq 0) { return }
 		}
 		__print_usage__;
