@@ -1,4 +1,4 @@
-package Concordance::BuildGeliAndBS;
+package Concordance::RawBsToGeli;
 
 use strict;
 use warnings;
