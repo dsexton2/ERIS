@@ -71,3 +71,5 @@ sub execute {
 		$scheduler->runCommand;
 	}
 }
+
+1;
