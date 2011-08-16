@@ -51,9 +51,8 @@ sub execute {
 	my $size = @files;
 
 	foreach my $file (@files) {
-		my @a=split(/\./,$file);
 		$file =~ /.*\/([^\.]+).*$/;
-		my $outfile=$a[0].".birdseed";
+		my $outfile=$1.".birdseed";
 		$debug_log->debug("Converting $file to $outfile\n");
 		open(FOUT,"> $outfile");
 		open(FIN,"$file");
