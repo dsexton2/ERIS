@@ -61,7 +61,7 @@ sub execute {
 			if (/^\[/ || /^\@/) {
 				# do nothing
 			} else {
-				@a=split(/\s+/);
+				my @a=split(/\s+/);
 				print FOUT "$a[0]\t$a[1]\t$a[2]\t$a[5]\n";
 			}
 		}
