@@ -53,7 +53,6 @@ sub execute {
 			next;
 		}
 		(my $output_csfasta_file = $input_bam_file) =~ s/bam$/csfasta/g;
-		$output_csfasta_file =~ s/\.sorted\.dups\.rg//g;
 		my $command = $config{"java"}." -Xmx2G -jar ".$config{"bam_2_csfasta_jar"}.
 			" $input_bam_file".
 			" >".
@@ -64,7 +63,6 @@ sub execute {
 		$scheduler->setPriority('normal');
 		$debug_log->debug("Submitting job with command: $command\n");
 		$scheduler->runCommand;
-		$input_bam_file =~ s/\.sorted\.dups\.rg//g;
 		print CSV_FILE_CSFASTA "$sample_id,$output_csfasta_file\n";
 	}
 
