@@ -2,6 +2,7 @@ package Concordance::Judgement;
 
 use strict;
 use warnings;
+use Log::Log4perl;
 use Inline Ruby => 'require "/users/p-qc/concordance/scripts/JudgeJudy"';
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
