@@ -84,9 +84,7 @@ sub execute {
 				foreach my $file (@files) {
 					if (stat($file)) {  
 						# the link works
-						if (readlink($file) =~ /results/ and readlink($file) =~ /csfasta/) {
-							$list.=" ".$file;
-						}
+						$list.=" ".$file;
 					}
 					else {
 						# we've got a bad link
