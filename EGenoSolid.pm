@@ -12,7 +12,7 @@ my $error_screen = Log::Log4perl->get_logger("errorScreenLogger");
 
 sub new {
 	my $self = {};
-	$self->{config} = undef;
+	$self->{config} = ();
 	$self->{input_path} = undef;
 	$self->{output_path} = undef;
 	$self->{error_path} = undef;
