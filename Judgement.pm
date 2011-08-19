@@ -2,8 +2,9 @@ package Concordance::Judgement;
 
 use strict;
 use warnings;
+use diagnostics;
 use Log::Log4perl;
-use Inline Ruby => 'require "/users/p-qc/concordance/scripts/JudgeJudy"';
+use Inline Ruby => 'require "/users/p-qc/concordance/scripts/JudgeJudy.rb"';
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
