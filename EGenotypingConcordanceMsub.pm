@@ -19,7 +19,7 @@ sub new {
 	return $self;
 }
 
-sub e_geno_list {
+sub egeno_list {
 	my $self = shift;
 	if (@_) { $self->{egeno_list} = shift }
 	return $self->{egeno_list}; #\w+.csv$
@@ -33,7 +33,7 @@ sub snp_array {
 
 sub execute {
 	my $self = shift;
-	open(FIN, $self->e_geno_list);
+	open(FIN, $self->egeno_list);
 	my $i=1;
 	my @com_array;
 	while(<FIN>)
@@ -41,9 +41,8 @@ sub execute {
 		chomp;
 		my @a=split(/\s+/);
 		my $temp=join("#",@a);
-		#$command = "bsub -e $i.e -o $i.o -J $i\_eGeno\_concor.job \"/stornext/snfs0/next-gen/concordance_analysis/e-Genotyping_concordance.pl $temp $SNP_array \"\;";
+
 		my $command = "\"/stornext/snfs0/next-gen/concordance_analysis/e-Genotyping_concordance.pl $temp ".$self->snp_array." \"\;";
-		
 		my $scheduler = new Concordance::Bam2csfasta::Scheduler("$i\_eGeno\_concor.job", $command);
 		$scheduler->setMemory(2000);
 		$scheduler->setNodeCores(2);
@@ -65,9 +64,43 @@ Concordance::EGenotypingConcordanceMsub
 
 =head1 SYNOPSIS
 
+ use Concordance::EGenotypingConcordanceMsub;
+ my $ecm = Concordance::EGenotypingConcordanceMsub->new;
+ $ecm->egeno_list("foo.csv");
+ $ecm->snp_array("/foo/bar");
+ $ecm->execute;
+
 =head1 DESCRIPTION
 
+This module takes a CSV file and SNP array directory.  It then constructs commands
+to submit to msub to execute eGenotyping concordance. This is a wrapper module to
+another script.
+
+=head2 Methods
+
+=over 12
+
+=item C<new>
+
+The constructor which returns a new Concordance::EGenotypingConcordanceMsub object.
+
+=item C<egeno_list>
+
+Accessor/mutator for the CSV list of sample IDs and associated CSFASTA paths.
+
+=item C<snp_array>
+
+Accessor/mutator for the directory containing the SNP arrays (.birdseed files).
+
+=item C<execute>
+
+Constructs commands to submit to msub.
+
+=back
+
 =head1 LICENSE
+
+This Perl module is the property of Baylor College of Medicine HGSC.
 
 =head1 AUTHOR
 
