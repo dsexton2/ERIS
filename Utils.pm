@@ -112,24 +112,33 @@ sub validate_param {
 }
 
 sub populate_sample_info_hash {
-	# this should be a comma-delimited list of run IDs; 
-	my $run_id_list = undef;
-	if (@_) { $run_id_list = $_[$#_] }
+	shift;
+	# run_id_list - this should be a comma-delimited list of run IDs
+	# returns a hash populated as hash{sample_id} => Concordance::Sample
+	my %runids_to_snps = ();
+	#if (@_) { %{ %runids_to_snps } = $_[$#_]; }
+	%runids_to_snps = shift;
+
+	my $run_id_list = "";
+	foreach my $run_id (keys %runids_to_snps) { $run_id_list .= $run_id."," }
+	$run_id_list =~ s/(.*),$/$1/;
 
 	my $post_data = "runnamelist=$run_id_list";
-	my $url = "http://test-gen2.hgsc.bcm.tmc.edu/gen2lims-reporting/jaxrs/reportservice/runinfo";
+	my $url = "http://gen2.hgsc.bcm.tmc.edu/gen2lims-reporting/jaxrs/reportservice/runinfo";
 	my $result = `curl -d "$post_data" -X POST $url`;
-	my %samples = ();
 
+	my %samples = ();
 	while ($result =~ m/([^,]+),([^,]+),(.*)\n/) {
 	    if ($1 ne "run_name") {
-	        $samples{$2} = Concordance::Sample->new;        
+	        $samples{$2} = Concordance::Sample->new;
 	        $samples{$2}->run_id($1);
-	        $samples{$2}->sample_id($2);                                                                     
-	        $samples{$2}->result_file($3);                                                                   
+			$samples{$2}->snp_array($runids_to_snps{$1});
+	        $samples{$2}->sample_id($2);
+	        $samples{$2}->result_path($3);
 	    }   
-	    $result =~ s/$1,$2,$3\n//;                                                                           
+	    $result =~ s/$1,$2,$3\n//; # remove the line; finished processing it
 	}
+	print %samples;
 	return %samples;
 }
 
