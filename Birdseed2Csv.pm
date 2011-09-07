@@ -1,9 +1,9 @@
-#!/usr/bin/perl
-
 package Concordance::Birdseed2Csv;
 
 use strict;
 use warnings;
+use diagnostics;
+use Log::Log4perl;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -11,6 +11,7 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 sub new {
 	my $self = {};
 	$self->{path} = undef;
+	$self->{output_csv_file} = undef;
 	bless($self);
 	return $self;
 }
@@ -19,6 +20,12 @@ sub path {
 	my $self = shift;
 	if (@_) { $self->{path} = shift; }
 	return $self->{path}; #[^\0]+
+}
+
+sub output_csv_file {
+	my $self = shift;
+	if (@_) { $self->{output_csv_file} = shift }
+	return $self->{output_csv_file};
 }
 
 sub execute {
@@ -31,10 +38,10 @@ sub execute {
 	my $out_num=0;
 	my $redo=0;
 	my $out = '';
+	open(FOUT, ">".$self->output_csv_file) or die $!;
 	
 	foreach my $file (@files) {
 		open(FIN,"$file");
-		open(FOUT, ">$file.csv");
 		$file =~ /^.*\/(.*?)\.birdseed\.txt$/;
 		my $name = $1;
 	
@@ -77,8 +84,8 @@ sub execute {
 		}
 		print FOUT "\n";
 		close(FIN);	
-		close(FOUT);
 	} 
+	close(FOUT);
 }
 
 1;
@@ -107,6 +114,10 @@ Returns a new Concordance::Birdseed2Csv object.
 =item C<path>
 
 Gets and sets the path containing the .birdseed.txt files.
+
+=item C<output_csv_path>
+
+The path of the CSV file to which output shall be written.
 
 =item C<generate_csv>
 

@@ -2,6 +2,7 @@ package Concordance::TUI;
 
 use warnings;
 use strict;
+use diagnostics;
 use feature 'switch';
 use Config::General;
 use Log::Log4perl;
@@ -17,11 +18,14 @@ use Concordance::EGtIllPrep;
 use Concordance::GeliToBs;
 use Concordance::Judgement;
 use Concordance::RawBsToGeli;
+use Concordance::Utils;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
+my $error_screen = Log::Log4perl->get_logger("errorScreenLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 my %pipeline_params = ();
+my %samples = ();
 
 sub new {
 	my $self = {};
@@ -222,8 +226,37 @@ sub __print_usage__ {
 		"\n";
 }
 
+sub get_sample_data {
+	my $self = shift;
+	my $run_id_list_file = undef;
+	if (@_) { $run_id_list_file = shift }
+	if (!-e $run_id_list_file) {
+		$error_log->error("Run ID file DNE: $run_id_list_file\n");
+		die("Run ID file DNE: $run_id_list_file\n");
+	}
+	my %runids_and_snps = ();
+	open(FIN, $run_id_list_file) or die $!;
+	while (my $line = <FIN>) {
+		$line =~ /^(.*),(.*)$/;
+		$runids_and_snps{$1} = $2;
+	}
+	close(FIN);
+	# run ids are likely copied from a spreadsheet, so one per line
+	%samples = Concordance::Utils->populate_sample_info_hash(%runids_and_snps);
+	if (scalar keys %samples == 0) {
+		$error_log->error("Failed to populate sample hash with run ids from $run_id_list_file\n");
+		die "Failed to populate sample hash with run ids from $run_id_list_file";
+	}
+}
+
 sub execute {
 	my $self = shift;
+	if (my $input = Term::ReadLine->new("run_ids")->readline("\nEnter RunIDs file path? [y/n]\n")) {
+		if ($input eq "y" or $input eq "Y") {
+			my $run_id_file = Term::ReadLine->new("run_id_file")->readline("\nEnter RunID file path: ");
+			$self->get_sample_data($run_id_file);
+		}
+	}
 	__print_usage__;
 	$self->__get_params__;
 	my $term = Term::ReadLine->new("user_input");

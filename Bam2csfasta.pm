@@ -1,72 +1,104 @@
-#!/usr/bin/perl -w
-
 package Concordance::Bam2csfasta;
 
 use strict;
 use warnings;
+use diagnostics;
 use Config::General;
 use Log::Log4perl;
 use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
+
+my $error_log = Log::Log4perl->get_logger("errorLogger");
+my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
 	$self->{config} = ();
 	$self->{csv_file} = undef;
+	$self->{samples} = ();
+	$self->{debug_flag} = 0;
 	bless($self);
 	return $self;
 }
 
 sub config {
 	my $self = shift;
-	if (@_) { %{ $self->{config} } = @_; }
+	if (@_) { %{ $self->{config} } = @_ }
 	return %{ $self->{config} };
 }
 
 sub csv_file {
 	my $self = shift;
-	if (@_) { $self->{csv_file} = shift; }
+	if (@_) { $self->{csv_file} = shift }
 	return $self->{csv_file}; #\w+.csv$
+}
+
+sub samples {
+	my $self = shift;
+	if (@_) { %{ $self->{samples} } = @_ }
+	return %{ $self->{samples} };
+}
+
+sub debug_flag {
+	my $self = shift;
+	if (@_) { $self->{debug_flag} = shift }
+	return $self->{debug_flag};
+}
+
+sub __submit__ {
+	my $self = shift;
+	my $sample_id = shift;
+	my $input_bam_file = shift;
+	my $fh = shift;
+	my %config = $self->config;
+
+	if ($input_bam_file !~ /.bam$/) {
+		print "Bad sample_id/input_bam_file pair: $sample_id\t$input_bam_file\n";
+		next;
+	}
+	(my $output_csfasta_file = $input_bam_file) =~ s/bam$/csfasta/g;
+	my $command = $config{"java"}." -Xmx2G -jar ".$config{"bam_2_csfasta_jar"}.
+		" $input_bam_file".
+		" >".
+		" $output_csfasta_file";
+	print $fh "$sample_id,$output_csfasta_file\n";
+
+	my $scheduler = new Concordance::Bam2csfasta::Scheduler($sample_id, $command);
+	$scheduler->setMemory(2000);
+	$scheduler->setNodeCores(2);
+	$scheduler->setPriority('normal');
+	$debug_log->debug("Submitting job with command: $command\n");
+	if ($self->debug_flag) { $scheduler->runCommand }
 }
 
 sub execute {
 	my $self = shift;
-	my $error_log = Log::Log4perl->get_logger("errorLogger");
-	my $debug_log = Log::Log4perl->get_logger("debugLogger");
-
-	if ($self->{csv_file} !~ /.+\.csv$/) {
-		$error_log->error("This script requires a *.csv file as an argument.\n");
-		exit;
-	}
-
-	open(CSV_FILE_BAM, $self->{csv_file});
+	my %config = $self->config;
+	my %samples = $self->samples;
 	open(CSV_FILE_CSFASTA, "> ".$self->csv_file.".csfasta.csv");
 
-	my %config = $self->config;
-
-	while (<CSV_FILE_BAM>) {
-		chomp;
-		if($_ !~ /^(.*),+(.*)$/) { next; }
-		my $sample_id = $1;
-		my $input_bam_file = $2;
-		if ($input_bam_file !~ /.bam$/) {
-			print "Bad sample_id/input_bam_file pair: $sample_id\t$input_bam_file\n";
-			next;
+	if (scalar keys %samples != 0) { # Sample objects passed from EGenoSolid
+		foreach my $sample_id (keys %samples) {
+			my $input_bam_file = $samples{$sample_id}->result_path;
+			$self->__submit__($sample_id, $input_bam_file, *CSV_FILE_CSFASTA);
 		}
-		(my $output_csfasta_file = $input_bam_file) =~ s/bam$/csfasta/g;
-		my $command = $config{"java"}." -Xmx2G -jar ".$config{"bam_2_csfasta_jar"}.
-			" $input_bam_file".
-			" >".
-			" $output_csfasta_file";
-		my $scheduler = new Concordance::Bam2csfasta::Scheduler($sample_id, $command);
-		$scheduler->setMemory(2000);
-		$scheduler->setNodeCores(2);
-		$scheduler->setPriority('normal');
-		$debug_log->debug("Submitting job with command: $command\n");
-		$scheduler->runCommand;
-		print CSV_FILE_CSFASTA "$sample_id,$output_csfasta_file\n";
 	}
 
-	close(CSV_FILE_BAM);
+	else { # reading from a file
+		if ($self->{csv_file} !~ /.+\.csv$/) {
+			$error_log->error("This script requires a *.csv file as an argument.\n");
+			exit;
+		}
+		open(CSV_FILE_BAM, $self->{csv_file});
+		while (<CSV_FILE_BAM>) {
+			chomp;
+			if($_ !~ /^(.*),+(.*)$/) { next; }
+			my $sample_id = $1;
+			my $input_bam_file = $2;
+			$self->__submit__($sample_id, $input_bam_file, *CSV_FILE_CSFASTA);
+		}
+		close(CSV_FILE_BAM);
+	}
+
 	close(CSV_FILE_CSFASTA);
 }
 
