@@ -17,6 +17,7 @@ sub new {
 	$self->{output_path} = undef;
 	$self->{error_path} = undef;
 	$self->{samples} = ();
+	$self->{debug_flag} = 0;
 	bless($self);
 	return $self;
 }
@@ -49,6 +50,12 @@ sub samples {
 	my $self = shift;
 	if (@_) { %{ $self->{samples} } = @_; }
 	return %{ $self->{samples} };
+}
+
+sub debug_flag {
+	my $self = shift;
+	if (@_) { $self->{debug_flag} = shift }
+	return $self->{debug_flag};
 }
 
 sub __get_file_list__ {
@@ -96,8 +103,9 @@ sub execute {
 		my @files = undef;
 		if ((@files = glob($path."/input/*.csfasta")) || (@files = glob($path."/*.csfasta"))) {
 			#egeno_solid.sh
-			$path =~ /.*\/(.*)$/;
-			my $se = $1;
+			#$path =~ /.*\/(.*)$/;
+			#my $se = $1;
+			my $se = $samples{$sample_id}->run_id;
 			my $full_name = $sample_id."_".$se;
 			foreach my $file (@files) {
 				if (stat($file)) {  
@@ -191,7 +199,7 @@ sub execute {
 		my $b2c = Concordance::Bam2csfasta->new;
 		$b2c->config($self->config);
 		$b2c->csv_file($self->error_path);
-		$b2c->execute;
+		if (!$self->debug_flag) { $b2c->execute }
 	}
 }
 
