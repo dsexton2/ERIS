@@ -18,6 +18,7 @@ sub new {
 	$self->{sample_snp_validation_file} = undef;
 	$self->{snp_array_dir} = undef;
 	$self->{output_csv} = undef;
+	$self->{samples} = {};
 	bless($self);
 	return $self;
 }
@@ -56,6 +57,12 @@ sub output_csv {
 	my $self = shift;
 	if (@_) { $self->{output_csv} =  shift }
 	return $self->{output_csv};
+}
+
+sub samples {
+	my $self = shift;
+	if (@_) { %{ $self->{samples} } = @_; }
+	return %{ $self->{samples} };
 }
 
 sub execute {
@@ -102,6 +109,7 @@ sub judge {
 	my $missing = 0;
 	my $newline = "";
 
+	
 	open(FOUT, ">".$self->output_csv) or die $!;
 	print FOUT $rules{"header"}."\n";
 	
@@ -136,20 +144,32 @@ sub judge {
 		}
 		else {
 			if ($bestHitID ne $sample_snp_pairs{$sampleid}) {
-				my @snp_array_files = glob($self->snp_array_dir."/*.*");
-				my $matched_in_snp_dir = 0;
-				foreach my $snp_array_file (@snp_array_files) {
-					my $snp_array_name = $sample_snp_pairs{$sampleid};
-					if ($snp_array_file =~ /$snp_array_name/) {
-						$matched_in_snp_dir = 1;
+				my %samples = $self->samples;
+				if (scalar keys %samples != 0) {
+					if (!-e $self->snp_array_dir."/".$samples{$sampleid}->snp_array.".birdseed") {
+						#$newline = "Missing SNP array: ".$sample_snp_pairs{$sampleid};
+						$newline = "Could not find expected SNP array file ".
+							$samples{$sampleid}->snp_array.".birdseed in directory ".
+							$self->snp_array_dir." for sample ID ".$sampleid;
+						$missing += 1;
+						print FOUT $newline."\n";
 					}
 				}
-				if ($matched_in_snp_dir == 0) {
-					$newline = "Missing SNP array: ".$sample_snp_pairs{$sampleid};
-					$missing += 1;
-					print FOUT $newline."\n";
-					next;
-				}
+
+				#my @snp_array_files = glob($self->snp_array_dir."/*.*");
+				#my $matched_in_snp_dir = 0;
+				#foreach my $snp_array_file (@snp_array_files) {
+				#	my $snp_array_name = $sample_snp_pairs{$sampleid};
+				#	if ($snp_array_file =~ /$snp_array_name/) {
+				#		$matched_in_snp_dir = 1;
+				#	}
+				#}
+				#if ($matched_in_snp_dir == 0) {
+				#	$newline = "Missing SNP array: ".$sample_snp_pairs{$sampleid};
+				#	$missing += 1;
+				#	print FOUT $newline."\n";
+				#	next;
+				#}
 			}
 			if ($slf > 0.9 and $slf > $bestHitValue) {
 				$newline = "Pass\t$line";
