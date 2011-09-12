@@ -135,7 +135,7 @@ sub bs_2_birdseed {
 sub egt_ill_prep {
 	print "Executing eGT Illumina preparation ...\n";
 	my $self = shift;
-	$self->set_instance_members("Concordance:EGtIllPrep");
+	$self->set_instance_members("Concordance::EGtIllPrep");
 }
 
 sub msub_illumina_egeno {
@@ -165,7 +165,7 @@ sub change_aa_to_0 {
 sub egeno_solid {
 	print "Executing SOLiD egenotyping ...\n";
 	my $self = shift;
-	$self->set_instance_members("Concordance::EGenoSolid");
+	$self->set_instance_members("Concordance::EGenoSolid", "pass_config");
 }
 
 sub egenotyping_concordance_msub {
@@ -206,6 +206,7 @@ sub set_instance_members {
 		else { $instance->$param($self->{CONFIG}{$param}) }
 	}
 	if ($pass_config_flag) { $instance->config($self->config) }
+	if ($instance->can("samples")) { $instance->samples(%samples) }
 	$instance->execute;
 }
 
@@ -222,6 +223,7 @@ sub __print_usage__ {
 		"[9] Execute Birdseed to CSV conversion.\n".
 		"[A] Execute SOLiD egenotyping.\n".
 		"[B] Judge concordance analysis.\n".
+		"[C] Execute SOLiD eGeno msub scheduler.\n".
 		"[0] Exit.\n".
 		"\n";
 }
@@ -283,6 +285,7 @@ sub execute {
 			when ($input eq 9) { $self->birdseed_2_csv }
 			when ($input eq "A") { $self->egeno_solid }
 			when ($input eq "B") { $self->judgement }
+			when ($input eq "C") { $self->egenotyping_concordance_msub }
 			when ($input eq 0) { return }
 		}
 		__print_usage__;
