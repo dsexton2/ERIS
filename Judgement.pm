@@ -15,7 +15,6 @@ sub new {
 	$self->{config} = ();
 	$self->{project_name} = undef;
 	$self->{input_csv_path} = undef;
-	$self->{sample_snp_validation_file} = undef;
 	$self->{snp_array_dir} = undef;
 	$self->{output_csv} = undef;
 	$self->{samples} = {};
@@ -41,22 +40,16 @@ sub input_csv_path {
 	return $self->{input_csv_path}; #\w+.csv$
 }
 
-sub sample_snp_validation_file {
-	my $self = shift;
-	if (@_) { $self->{sample_snp_validation_file} = shift }
-	return $self->{sample_snp_validation_file};
-}
-
 sub snp_array_dir {
 	my $self = shift;
 	if (@_) { $self->{snp_array_dir} =  shift }
-	return $self->{snp_array_dir};
+	return $self->{snp_array_dir}; #[^\0]+
 }
 
 sub output_csv {
 	my $self = shift;
 	if (@_) { $self->{output_csv} =  shift }
-	return $self->{output_csv};
+	return $self->{output_csv}; #\w+.csv$
 }
 
 sub samples {
@@ -73,7 +66,7 @@ sub execute {
 
 sub get_rules {
 	my $self = shift;
-	open(FIN, "Concordance/config/judgement_rules") or die $!;
+	open(FIN, "/users/p-qc/dev/Concordance/config/judgement_rules") or die $!;
 	my $rules_content = do { local $/; <FIN> };
 	close(FIN);
 	my $project_name = $self->project_name; # so I don't have to do interpolation work-arounds
@@ -108,25 +101,21 @@ sub judge {
 	my $passGreater = 0;
 	my $missing = 0;
 	my $newline = "";
-
 	
 	open(FOUT, ">".$self->output_csv) or die $!;
-	print FOUT $rules{"header"}."\n";
+	my $header = $rules{"header"};
+	$header =~ s/\t/,/g;
+	print FOUT $header."\n";
 	
-	open(VALTSV, $self->sample_snp_validation_file) or die $!;
-	while (<VALTSV>) {
-		chomp;
-		my @sample_snp_cols;
-		if ((@sample_snp_cols = split(/\s+/, $_)) || (@sample_snp_cols = split(/,/, $_))) {
-			$sample_snp_pairs{$sample_snp_cols[0]} = $sample_snp_cols[1];
-		}
+	my %samples = $self->samples;
+	foreach my $sample_id (keys %samples) {
+		$sample_snp_pairs{$sample_id} = $samples{$sample_id}->snp_array;
 	}
-	close(VALTSV);
 	open(FINPUT, $self->input_csv_path) or die $!;
 	while (my $line = <FINPUT>) {
 		$newline = "";
 		my @line_cols = undef;
-		if (@line_cols = split(/\s+/, $line)) {  } else { @line_cols = split(/,/, $line) }
+		@line_cols = split(/,/, $line);
 		my $sampleid = $line_cols[$rules{"sampleid"}];
 		my $average = $line_cols[$rules{"average"}];
 		my $slf = $line_cols[$rules{"slf"}];
@@ -135,11 +124,11 @@ sub judge {
 
 		# if 0.5 > average > 0.75, we're not checking
 		if ($average < 0.5) {
-			$newline = "Low Average Concordance\t$line";
+			$newline = "Low Average Concordance,$line";
 			$lowConc += 1;
 		}
 		elsif ($average > 0.75) {
-			$newline = "Insensitive Test\t$line";
+			$newline = "Insensitive Test,$line";
 			$insen += 1;
 		}
 		else {
@@ -147,7 +136,6 @@ sub judge {
 				my %samples = $self->samples;
 				if (scalar keys %samples != 0) {
 					if (!-e $self->snp_array_dir."/".$samples{$sampleid}->snp_array.".birdseed") {
-						#$newline = "Missing SNP array: ".$sample_snp_pairs{$sampleid};
 						$newline = "Could not find expected SNP array file ".
 							$samples{$sampleid}->snp_array.".birdseed in directory ".
 							$self->snp_array_dir." for sample ID ".$sampleid;
@@ -155,44 +143,29 @@ sub judge {
 						print FOUT $newline."\n";
 					}
 				}
-
-				#my @snp_array_files = glob($self->snp_array_dir."/*.*");
-				#my $matched_in_snp_dir = 0;
-				#foreach my $snp_array_file (@snp_array_files) {
-				#	my $snp_array_name = $sample_snp_pairs{$sampleid};
-				#	if ($snp_array_file =~ /$snp_array_name/) {
-				#		$matched_in_snp_dir = 1;
-				#	}
-				#}
-				#if ($matched_in_snp_dir == 0) {
-				#	$newline = "Missing SNP array: ".$sample_snp_pairs{$sampleid};
-				#	$missing += 1;
-				#	print FOUT $newline."\n";
-				#	next;
-				#}
 			}
 			if ($slf > 0.9 and $slf > $bestHitValue) {
-				$newline = "Pass\t$line";
+				$newline = "Pass,$line";
 				$pass += 1;
 			}
 			elsif ($slf > 0.9 and $slf < $bestHitValue) {
-				$newline = "Pass - Best hit greater than self concordance: $bestHitID\t$line";
+				$newline = "Pass - Best hit greater than self concordance: $bestHitID,$line";
 				$passGreater += 1;
 			}
 			elsif ($slf >= 0.8 and $slf <= 0.9) {
-				$newline = "Marginal Concordance\t$line";
+				$newline = "Marginal Concordance,$line";
 				$marginal += 1;
 			}
 			elsif ($slf < 0.8 and $bestHitValue > 0.9) {
-				$newline = "Known Swap - $bestHitID\t$line";
+				$newline = "Known Swap - $bestHitID,$line";
 				$known += 1;
 			}
 			elsif ($slf < 0.8 and $bestHitValue < 0.8) {
-				$newline = "Unknown Swap\t$line";
+				$newline = "Unknown Swap,$line";
 				$unknown += 1;
 			}
 			elsif ($slf < 0.8 and $bestHitValue >= 0.8 and $bestHitValue <= 0.9) {
-				$newline = "Possible Contamination\t$line";
+				$newline = "Possible Contamination,$line";
 				$contam += 1;
 			}
 		}

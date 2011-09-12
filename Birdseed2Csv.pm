@@ -12,6 +12,7 @@ sub new {
 	my $self = {};
 	$self->{path} = undef;
 	$self->{output_csv_file} = undef;
+	$self->{samples} = ();
 	bless($self);
 	return $self;
 }
@@ -25,12 +26,18 @@ sub path {
 sub output_csv_file {
 	my $self = shift;
 	if (@_) { $self->{output_csv_file} = shift }
-	return $self->{output_csv_file};
+	return $self->{output_csv_file}; #\w+.csv$
+}
+
+sub samples {
+	my $self = shift;
+	if (@_) { %{ $self->{samples} } = @_ }
+	return %{ $self->{samples} };
 }
 
 sub execute {
 	my $self = shift;
-	my @files = glob($self->path."*.birdseed.txt");
+	my @files = glob($self->path."/*.birdseed.txt");
 	my $OUT_CUT = 10;
 	
 	my %concordance;
@@ -41,12 +48,22 @@ sub execute {
 	open(FOUT, ">".$self->output_csv_file) or die $!;
 	
 	foreach my $file (@files) {
+		$debug_log->debug("Processing file $file\n");
 		open(FIN,"$file");
 		$file =~ /^.*\/(.*?)\.birdseed\.txt$/;
 		my $name = $1;
 	
 		### output sample ID from birdseed
-		print FOUT "$name";
+		my %samples = $self->samples;
+		my $sample = "";
+		my $run = "";	
+		foreach my $sample_id (keys %samples) {
+			my $se = $samples{$sample_id}->run_id;
+			if ($name eq $sample_id."_".$se) {
+				print FOUT $se.",".$sample_id.",";
+				last;
+			}
+		}
 	
 		my $one=""; my $one_num=-1;
 		my $self=""; my $couple="";
@@ -73,15 +90,19 @@ sub execute {
 	
 		}
 	
-		$average = $average / $num;
-		print FOUT ",$average";
+		if ($num != 0) { $average = $average / $num }
+		else { $average = "NaN" }
+		print FOUT "$average";
 	
 		$out_num=0;
-		foreach my $key (sort { $concordance{$b} <=> $concordance{$a} } (keys(%concordance))) {
-			print FOUT ",$concordance{$key},$key";
-			$out_num++;
-			if ($out_num >= $OUT_CUT) { last; }
+		if (scalar keys %concordance != 0) {
+			foreach my $key (sort { $concordance{$b} <=> $concordance{$a} } (keys(%concordance))) {
+				print FOUT ",$concordance{$key},$key";
+				$out_num++;
+				if ($out_num >= $OUT_CUT) { last; }
+			}
 		}
+		else { print FOUT ",No concordance values" }
 		print FOUT "\n";
 		close(FIN);	
 	} 

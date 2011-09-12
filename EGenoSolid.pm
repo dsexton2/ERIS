@@ -101,18 +101,21 @@ sub execute {
 		}
 		my $list = "";
 		my @files = undef;
+		my $se = $samples{$sample_id}->run_id;
+		my $full_name = $sample_id."_".$se;
 		if ((@files = glob($path."/input/*.csfasta")) || (@files = glob($path."/*.csfasta"))) {
 			#egeno_solid.sh
 			#$path =~ /.*\/(.*)$/;
 			#my $se = $1;
-			my $se = $samples{$sample_id}->run_id;
-			my $full_name = $sample_id."_".$se;
+			my $bad_link = 0;
 			foreach my $file (@files) {
+				if ($bad_link and (scalar @files > 1)) { last }
 				if (stat($file)) {  
 					# the link works
 					$list.=" ".$file;
 				}
 				else {
+					$bad_link = 1;
 					# we've got a bad link
 					$error_log->error("Bad link: $file -> ".readlink($file)."\n");
 					$error_screen->error("Bad link: $file -> ".readlink($file)."\n");
@@ -125,6 +128,15 @@ sub execute {
 							print STDOUT "Linking $file to $link\n";
 							if (!-e $link) { touch($link) }
 							unlink($file);
+							# terrible kludge - if there are two CSFASTA softlinks, of which
+							# at least one is broken, remove both links, create a new link based
+							# off of the BAM and pointing at the CSFASTA that will result from
+							# the subsequent BAM to CSFASTA conversion
+							if (scalar @files > 1) {
+								foreach my $badlink (@files) {
+									unlink($badlink);
+								}
+							}
 							if (!-e $path."/input") {
 								mkdir($path."/input");
 								$file =~ s/^(.*)\/(.*)$/$1\/input\/$2/;
@@ -132,6 +144,7 @@ sub execute {
 							if (!symlink($link, $file)) {
 								print STDERR "Failed to link $file to $link for bam $bam_file\n";
 							}
+							else { $list.=" ".$file }
 						}
 					}
 					else {
@@ -165,9 +178,11 @@ sub execute {
 					if (!symlink($link, $file)) {
 						print STDERR "Failed to link $file to $link for bam $bam_file\n";
 					}
+					else { $list.=" ".$file }
 				}
 			}
 			else { print "No .bam files in $path/output\n" }
+			if ($list ne "") { print FOUT $full_name." ".$list."\n" }
 		}
 		
 		#elsif (@csv_list == 3) {
@@ -199,6 +214,7 @@ sub execute {
 		my $b2c = Concordance::Bam2csfasta->new;
 		$b2c->config($self->config);
 		$b2c->csv_file($self->error_path);
+		$b2c->samples($self->samples);
 		if (!$self->debug_flag) { $b2c->execute }
 	}
 }
