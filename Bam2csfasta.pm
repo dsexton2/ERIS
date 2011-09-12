@@ -67,7 +67,7 @@ sub __submit__ {
 	$scheduler->setNodeCores(2);
 	$scheduler->setPriority('normal');
 	$debug_log->debug("Submitting job with command: $command\n");
-	if ($self->debug_flag) { $scheduler->runCommand }
+	if (!$self->debug_flag) { $scheduler->runCommand }
 }
 
 sub execute {
