@@ -116,8 +116,7 @@ sub populate_sample_info_hash {
 	# run_id_list - this should be a comma-delimited list of run IDs
 	# returns a hash populated as hash{sample_id} => Concordance::Sample
 	my %runids_to_snps = ();
-	#if (@_) { %{ %runids_to_snps } = $_[$#_]; }
-	%runids_to_snps = shift;
+	if (@_) { %runids_to_snps = @_ } 
 
 	my $run_id_list = "";
 	foreach my $run_id (keys %runids_to_snps) { $run_id_list .= $run_id."," }
