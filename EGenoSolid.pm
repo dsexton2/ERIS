@@ -13,7 +13,6 @@ my $error_screen = Log::Log4perl->get_logger("errorScreenLogger");
 sub new {
 	my $self = {};
 	$self->{config} = ();
-	$self->{input_path} = undef;
 	$self->{output_path} = undef;
 	$self->{error_path} = undef;
 	$self->{samples} = ();
@@ -26,12 +25,6 @@ sub config {
 	my $self = shift;
 	if (@_) { %{ $self->{config} } = @_; }
 	return %{ $self->{config} };
-}
-
-sub input_path {
-	my $self = shift;
-	if (@_) { $self->{input_path} = shift }
-	return $self->{input_path}; #[^\0]+
 }
 
 sub output_path {
@@ -76,7 +69,6 @@ sub __get_file_list__ {
 sub execute {
 	my $self = shift;
 	my %samples = $self->samples;
-	#open (FIN, $self->input_path);
 	open (FOUT, ">".$self->output_path);
 	open (FERR, ">".$self->error_path);
 	#while (<FIN>) {
@@ -229,7 +221,6 @@ Concordance::EGenoSolid
 
  my $egs = Concordance::EGenoSolid->new;
  $egs->config(%config);
- $egs->input_path("/users/p-qc/small_egs.txt");
  $egs->output_path("/users/p-qc/dev/egs_out.txt");
  $egs->error_path("/users/p-qc/testenv/bam2csfasta_input");
  $egs->execute;
@@ -245,8 +236,6 @@ Concordance::EGenoSolid
 =item C<new>
 
 =item C<config>
-
-=item C<input_path>
 
 =item C<output_path>
 
