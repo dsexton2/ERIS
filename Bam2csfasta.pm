@@ -35,7 +35,8 @@ sub csv_file {
 sub samples {
 	my $self = shift;
 	if (@_) { %{ $self->{samples} } = @_ }
-	return %{ $self->{samples} };
+	if (!defined($self->{samples})) { return () }
+	else { return %{ $self->{samples} } }
 }
 
 sub debug_flag {
@@ -73,9 +74,8 @@ sub __submit__ {
 sub execute {
 	my $self = shift;
 	my %config = $self->config;
-	my %samples = $self->samples;
 	open(CSV_FILE_CSFASTA, "> ".$self->csv_file.".csfasta.csv");
-
+	my %samples = $self->samples;
 	if (scalar keys %samples != 0) { # Sample objects passed from EGenoSolid
 		foreach my $sample_id (keys %samples) {
 			my $input_bam_file = $samples{$sample_id}->result_path;
