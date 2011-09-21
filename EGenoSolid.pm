@@ -15,7 +15,7 @@ sub new {
 	$self->{config} = ();
 	$self->{output_path} = undef;
 	$self->{error_path} = undef;
-	$self->{samples} = ();
+	$self->{samples} = {};
 	$self->{debug_flag} = 0;
 	bless($self);
 	return $self;
@@ -66,12 +66,37 @@ sub __get_file_list__ {
 	return @files;
 }
 
+sub check_perms {
+	# first check to make sure we have all the necessary file permissions
+	# for the directories in which we may need to create links etc
+	my $self = shift;
+	my %samples = $self->samples;
+	my $all_clear = 1;
+	foreach my $sample_id (keys %samples) {
+		my $path = $samples{$sample_id}->result_path;
+		if ($path =~ /\/output\//) {
+			$path =~ s/(.*)(output\/.*)/$1/;
+		}
+		else {
+			# it's a bam file not in the output dir; try to remove the .bam from the path
+			$path =~ s/(.*)\/[^\/]*.bam$/$1/g;
+		}
+		if (!-w $path) {
+			# make a note of each path for which perms need to be corrected
+			$error_log->error("No write perms on dir $path for run ID ".$samples{$sample_id}->run_id."\n");
+			$error_screen->error("No write perms on dir $path for run ID ".$samples{$sample_id}->run_id."\n");
+			$all_clear = 0;
+		}
+	}
+	return $all_clear;
+}
+
 sub execute {
 	my $self = shift;
 	my %samples = $self->samples;
+	if (!$self->check_perms) {print "Fix perms issues\n"; exit; }
 	open (FOUT, ">".$self->output_path);
 	open (FERR, ">".$self->error_path);
-	#while (<FIN>) {
 	foreach my $sample_id (keys %samples) {
 		#chomp;
 		#print "Processing $_\n";
@@ -94,7 +119,7 @@ sub execute {
 		my $list = "";
 		my @files = undef;
 		my $se = $samples{$sample_id}->run_id;
-		my $full_name = $sample_id."_".$se;
+		my $full_name = $sample_id;
 		if ((@files = glob($path."/input/*.csfasta")) || (@files = glob($path."/*.csfasta"))) {
 			#egeno_solid.sh
 			#$path =~ /.*\/(.*)$/;
@@ -198,7 +223,6 @@ sub execute {
 		#}
 	}
 	close(FERR);
-	#close FIN;
 	close FOUT;
 	# check if FERR is not empty; if it isn't, submit to Bam2Csfasta, else delete
 	if (!-z $self->error_path) {
