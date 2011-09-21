@@ -12,9 +12,9 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{config} = ();
+	$self->{config} = {};
 	$self->{csv_file} = undef;
-	$self->{samples} = ();
+	$self->{samples} = {};
 	$self->{debug_flag} = 0;
 	bless($self);
 	return $self;
@@ -23,7 +23,7 @@ sub new {
 sub config {
 	my $self = shift;
 	if (@_) { %{ $self->{config} } = @_ }
-	return %{ $self->{config} };
+	return $self->{config};
 }
 
 sub csv_file {
@@ -35,8 +35,7 @@ sub csv_file {
 sub samples {
 	my $self = shift;
 	if (@_) { %{ $self->{samples} } = @_ }
-	if (!defined($self->{samples})) { return () }
-	else { return %{ $self->{samples} } }
+	return $self->{samples};
 }
 
 sub debug_flag {
@@ -84,9 +83,14 @@ sub execute {
 	}
 
 	else { # reading from a file
-		if ($self->{csv_file} !~ /.+\.csv$/) {
-			$error_log->error("This script requires a *.csv file as an argument.\n");
-			exit;
+		# error-checking
+		if ($self->csv_file !~ /.+\.csv$/) {
+			$error_log->error("csv_file must be of type *.csv: ".$self->csv_file."\n");
+			die "csv_file must be of type *.csv: ".$self->csv_file."\n";
+		}
+		if (!-e $self->csv_file) {
+			$error_log->error("csv_file DNE: ".$self->csv_file."\n");
+			die "csv_file DNE: ".$self->csv_file."\n";
 		}
 		open(CSV_FILE_BAM, $self->{csv_file});
 		while (<CSV_FILE_BAM>) {
