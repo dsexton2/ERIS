@@ -113,6 +113,7 @@ sub judge {
 	}
 	open(FINPUT, $self->input_csv_path) or die $!;
 	while (my $line = <FINPUT>) {
+		chomp($line);
 		$newline = "";
 		my @line_cols = undef;
 		@line_cols = split(/,/, $line);
@@ -132,19 +133,23 @@ sub judge {
 			$insen += 1;
 		}
 		else {
-			if ($bestHitID ne $sample_snp_pairs{$sampleid}) {
+			my $snp = $sample_snp_pairs{$sampleid};
+			print "comparing $bestHitID to $snp\n";
+			if ($bestHitID !~ m/$snp/) {
 				my %samples = $self->samples;
 				if (scalar keys %samples != 0) {
 					if (!-e $self->snp_array_dir."/".$samples{$sampleid}->snp_array.".birdseed") {
-						$newline = "Could not find expected SNP array file ".
-							$samples{$sampleid}->snp_array.".birdseed in directory ".
-							$self->snp_array_dir." for sample ID ".$sampleid;
+						$newline = "Missing SNP array file ".
+							$self->snp_array_dir."/".$samples{$sampleid}->snp_array.".birdseed ".
+							" for sample ID ".$sampleid;
 						$missing += 1;
-						print FOUT $newline."\n";
+						$line =~ s/$slf//;
+						#TODO sampleid, avg, NO SELF, best
+						$newline .= ",".$line;
 					}
 				}
 			}
-			if ($slf > 0.9 and $slf > $bestHitValue) {
+			elsif ($slf > 0.9 and $slf > $bestHitValue) {
 				$newline = "Pass,$line";
 				$pass += 1;
 			}
