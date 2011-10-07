@@ -153,7 +153,7 @@ sub birdseed_2_csv {
 sub bam_2_csfasta {
 	print "Executing .bam=>.csfasta conversion ...\n";
 	my $self = shift;
-	$self->set_instance_members("Concordance::Bam2csfasta", "pass_config");
+	$self->set_instance_members("Concordance::Bam2csfasta");
 }
 
 sub change_aa_to_0 {
@@ -165,7 +165,7 @@ sub change_aa_to_0 {
 sub egeno_solid {
 	print "Executing SOLiD egenotyping ...\n";
 	my $self = shift;
-	$self->set_instance_members("Concordance::EGenoSolid", "pass_config");
+	$self->set_instance_members("Concordance::EGenoSolid");
 }
 
 sub egenotyping_concordance_msub {
@@ -183,13 +183,13 @@ sub judgement {
 sub raw_bs_to_geli {
 	print "Converting raw birdseed files to GELI files ...\n";
 	my $self = shift;
-	$self->set_instance_members("Concordance::RawBsToGeli", "pass_config");
+	$self->set_instance_members("Concordance::RawBsToGeli");
 }
 
 sub geli_to_bs {
 	print "Converting GELI files to BS files ...\n";
 	my $self = shift;
-	$self->set_instance_members("Concordance::GeliToBs", "pass_config");
+	$self->set_instance_members("Concordance::GeliToBs");
 }
 
 sub set_instance_members {
@@ -205,7 +205,7 @@ sub set_instance_members {
 		}
 		else { $instance->$param($self->{CONFIG}{$param}) }
 	}
-	if ($pass_config_flag) { $instance->config($self->config) }
+	if ($instance->can("config")) { $instance->config($self->config) }
 	if ($instance->can("samples")) { $instance->samples(%samples) }
 	$instance->execute;
 }
@@ -236,15 +236,13 @@ sub get_sample_data {
 		$error_log->error("Run ID file DNE: $run_id_list_file\n");
 		die("Run ID file DNE: $run_id_list_file\n");
 	}
-	my %runids_and_snps = ();
 	open(FIN, $run_id_list_file) or die $!;
-	while (my $line = <FIN>) {
-		$line =~ /^(.*),(.*)$/;
-		$runids_and_snps{$1} = $2;
-	}
+	my $run_id_list = do { local $/; <FIN> };
 	close(FIN);
 	# run ids are likely copied from a spreadsheet, so one per line
-	%samples = Concordance::Utils->populate_sample_info_hash(%runids_and_snps);
+	$run_id_list = s/\n/,/g;
+	$run_id_list = s/(.*),/$1/;
+	%samples = Concordance::Utils->populate_sample_info_hash($run_id_list);
 	if (scalar keys %samples == 0) {
 		$error_log->error("Failed to populate sample hash with run ids from $run_id_list_file\n");
 		die "Failed to populate sample hash with run ids from $run_id_list_file";
