@@ -41,7 +41,6 @@ foreach my $hapmap_file (@hapmap_files) {
 			$geno_counts{$line_vals{"rs#"}} = egeno_sums->new;
 		}
 
-		my $nn_count = 0;
 		foreach my $key (keys %line_vals) {
 			if ($key =~ m/^NA\d{5}/) {
 				if ($line_vals{$key} eq $major_homo) {
@@ -53,7 +52,6 @@ foreach my $hapmap_file (@hapmap_files) {
 				elsif ($line_vals{$key} eq $hetero) {
 					$geno_counts{$line_vals{"rs#"}}->het(1);
 				}
-				else { $nn_count += 1 }
 			}
 		}
 		#print $line_vals{"rs#"}.": ".$nn_count."\n";
@@ -85,7 +83,14 @@ while (my $line = <FIN>) {
 	my $total = $major_count + $minor_count + $hetero_count;
 
 	print FOUT $line;
-	print FOUT ($major_count / $total)."\t".($hetero_count / $total)."\t".($minor_count / $total)."\n";
+	if ($total != 0) {
+		print FOUT ($major_count / $total)."\t".($hetero_count / $total)."\t".($minor_count / $total);
+	}
+	else {
+		# since $total is 0, all results will be 0
+		print FOUT "0\t0\t0";
+	}
+	print FOUT "\n";
 }
 close(FIN);
 close(FOUT);
