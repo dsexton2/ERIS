@@ -6,7 +6,7 @@ use diagnostics;
 
 use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
 
-my $command = "/users/p-qc/dev/Concordance/Frequency/treepuller.pl ".$ARGV[0];
+my $command = "/users/p-qc/dev/Concordance/Frequency/build_partial_freq.pl ".$ARGV[0];
 (my $job_name = $ARGV[0]) =~ s/.*\/([^\/]+)\.xml/$1/;
 
 my $scheduler = new Scheduler($job_name, $command);
