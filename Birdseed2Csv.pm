@@ -103,7 +103,7 @@ Gets and sets the project name, with the program logic branching accordingly.
 sub project_name {
 	my $self = shift;
 	if (@_) { $self->{project_name} = shift }
-	return $self->{project_name};
+	return $self->{project_name}; #[^\0]+
 }
 
 =head3 __build_concordance_hash__
@@ -179,7 +179,7 @@ sub __base_output__ {
 			if ($out_num >= $MAX_PAIRS) { last; }
 		}
 	}
-	else { print FOUT ",No concordance values" }
+	else { print FOUT ",No concordance values for $file" }
 	print $FOUT "\n";
 
 }
