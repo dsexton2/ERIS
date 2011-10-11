@@ -11,53 +11,6 @@ use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Schedul
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
-sub new {
-	my $self = {};
-	$self->{egeno_list} = undef;
-	$self->{snp_array} = undef;
-	bless($self);
-	return $self;
-}
-
-sub egeno_list {
-	my $self = shift;
-	if (@_) { $self->{egeno_list} = shift }
-	return $self->{egeno_list}; #\w+.csv$
-}
-
-sub snp_array {
-	my $self = shift;
-	if (@_) { $self->{snp_array} = shift }
-	return $self->{snp_array}; #[^\0]+
-}
-
-sub execute {
-	my $self = shift;
-	open(FIN, $self->egeno_list);
-	my $i=1;
-	my @com_array;
-	while(<FIN>)
-	{
-		chomp;
-		my @a=split(/\s+/);
-		my $temp=join("#",@a);
-
-		my $command = "\"/stornext/snfs0/next-gen/concordance_analysis/e-Genotyping_concordance.pl $temp ".$self->snp_array." \"\;";
-		my $scheduler = new Concordance::Bam2csfasta::Scheduler("$i\_eGeno\_concor.job", $command);
-		$scheduler->setMemory(2000);
-		$scheduler->setNodeCores(2);
-		$scheduler->setPriority('normal');
-		$debug_log->debug("Submitting job with command: $command\n");
-		$scheduler->runCommand;
-
-		$com_array[$i] = $command;
-		$i++;
-	}
-	close(FIN);
-}
-
-1;
-
 =head1 NAME
 
 Concordance::EGenotypingConcordanceMsub
@@ -78,29 +31,100 @@ another script.
 
 =head2 Methods
 
-=over 12
+=head3 new
 
-=item C<new>
+ my $egeno_msub = Concordance::EGenotypingMsub->new;
 
-The constructor which returns a new Concordance::EGenotypingConcordanceMsub object.
+Creates a new Concordance::EGenotyping instance.
 
-=item C<egeno_list>
+=cut
 
-Accessor/mutator for the CSV list of sample IDs and associated CSFASTA paths.
+sub new {
+	my $self = {};
+	$self->{egeno_list} = undef;
+	$self->{snp_array} = undef;
+	$self->{probe_list} = undef;
+	bless($self);
+	return $self;
+}
 
-=item C<snp_array>
+=head3 egeno_list
 
-Accessor/mutator for the directory containing the SNP arrays (.birdseed files).
+ $egeno_msub->egeno_list("/path/to/egenolist.txt");
 
-=item C<execute>
+Gets and sets the path to the eGenotyping list, which contains line items of analysis IDs and the path(s) to their associated CSFASTA files (space-delimited).
 
-Constructs commands to submit to msub.
+=cut
 
-=back
+sub egeno_list {
+	my $self = shift;
+	if (@_) { $self->{egeno_list} = shift }
+	return $self->{egeno_list}; #\w+.txt$
+}
+
+=head3 snp_array
+
+ $egeno_msub->snp_array("snp_directory_name");
+
+Gets and sets the directory name in which the birdseed files (SNP arrays) are located.
+
+=cut
+
+sub snp_array {
+	my $self = shift;
+	if (@_) { $self->{snp_array} = shift }
+	return $self->{snp_array}; #[^\0]+
+}
+
+=head3 probe_list
+
+ $egeno_msub->probe_list("/path/to/probelist");
+
+Gets and sets the path to the probe list.
+
+=cut
+
+sub probe_list {
+	my $self = shift;
+	if (@_) { $self->{probe_list} = shift }
+	return $self->{probe_list}; #[^\0]+
+}
+
+=head3 execute
+
+ $egeno_msub->execute;
+
+Iterates on the eGenotyping list provided, and submits the concordance analysis jobs to msub.
+
+=cut
+
+sub execute {
+	my $self = shift;
+	open(FIN, $self->egeno_list);
+	my $job_counter = 1;
+	while(my $line = <FIN>)
+	{
+		chomp($line);
+		my @line_vals = split(/\s+/, $line);
+		my $analysis_id = shift @line_vals;
+		my $csfasta_files = join(',', @line_vals);
+
+		my $command = "\"/users/p-qc/dev/Concordance/Egenotyping/e-Genotyping_concordance.pl $analysis_id $csfasta_files ".$self->snp_array." ".$self->probe_list." \"\;";
+		my $scheduler = new Concordance::Bam2csfasta::Scheduler($job_counter++."\_eGeno\_concor.job", $command);
+		$scheduler->setMemory(2000);
+		$scheduler->setNodeCores(2);
+		$scheduler->setPriority('normal');
+		$debug_log->debug("Submitting job with command: $command\n");
+		$scheduler->runCommand;
+	}
+	close(FIN);
+}
+
+1;
 
 =head1 LICENSE
 
-This Perl module is the property of Baylor College of Medicine HGSC.
+GPLv3.
 
 =head1 AUTHOR
 
