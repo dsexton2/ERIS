@@ -29,7 +29,7 @@ while ($element = $pull->next) {
 				$field_values{"Seq5"} = uc $1;
 			}
 			foreach my $Seq3 ($element->get_elements("Sequence/Seq3")) {
-				$Seq3->text =~ m/^(\w{15}.*$)/;
+				$Seq3->text =~ m/^(\w{15}).*$/;
 				$field_values{"Seq3"} = uc $1;
 			}
 			last;
