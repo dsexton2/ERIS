@@ -1,4 +1,4 @@
-#! /hgsc_software/perl/latest/bin 
+#!/hgsc_software/perl/latest/bin/perl
 
 my $e_geno_list=$ARGV[0];
 my $SNP_array=$ARGV[1];
