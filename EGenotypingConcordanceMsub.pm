@@ -19,8 +19,9 @@ Concordance::EGenotypingConcordanceMsub
 
  use Concordance::EGenotypingConcordanceMsub;
  my $ecm = Concordance::EGenotypingConcordanceMsub->new;
- $ecm->egeno_list("foo.csv");
- $ecm->snp_array("/foo/bar");
+ $ecm->egeno_list("/foo/bar.txt");
+ $ecm->snp_array("foo");
+ $ecm->probe_list("/foo/bar");
  $ecm->execute;
 
 =head1 DESCRIPTION
