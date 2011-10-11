@@ -5,7 +5,7 @@ use XML::TreePuller;
 if ($#ARGV != 0) { die "Usage: perl treepuller.pl /path/to/xml/file.xml\n" }
 if (!-e $ARGV[0]) { die "Input file ".$ARGV[0]." DNE!\n" }
 
-(my $result_file = $ARGV[0]) =~ s/(.*)\.xml/$1.freq/;
+(my $result_file = $ARGV[0]) =~ s/(.*)\.xml/$1.prefrequency_probelist.part/;
 
 $pull = XML::TreePuller->new(location => $ARGV[0]);
 $pull->reader; #return the XML::LibXML::Reader object
