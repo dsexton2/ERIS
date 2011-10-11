@@ -1,6 +1,8 @@
+#!/stornext/snfs1/next-gen/software/perl-5.10.1/bin/perl
+
 use XML::TreePuller;
 
-if ($#ARGV < 0) { die "Usage: perl treepuller.pl /path/to/xml/file.xml\n" }
+if ($#ARGV != 0) { die "Usage: perl treepuller.pl /path/to/xml/file.xml\n" }
 if (!-e $ARGV[0]) { die "Input file ".$ARGV[0]." DNE!\n" }
 
 (my $result_file = $ARGV[0]) =~ s/(.*)\.xml/$1.freq/;
@@ -23,11 +25,11 @@ while ($element = $pull->next) {
 	foreach my $Ss ($element->get_elements('Ss')) {
 		if ($Ss->attribute('orient') eq "forward") {
 			foreach my $Seq5 ($element->get_elements("Sequence/Seq5")) {
-				$Seq5->text =~ m/^(\w{15}).*$/;
+				$Seq5->text =~ m/^.*(\w{15})$/;
 				$field_values{"Seq5"} = uc $1;
 			}
 			foreach my $Seq3 ($element->get_elements("Sequence/Seq3")) {
-				$Seq3->text =~ m/^.*(\w{15}$)/;
+				$Seq3->text =~ m/^(\w{15}.*$)/;
 				$field_values{"Seq3"} = uc $1;
 			}
 			last;
