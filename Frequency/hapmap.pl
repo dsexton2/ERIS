@@ -1,3 +1,10 @@
+#!/hgsc_software/perl/latest/bin/perl
+
+if ($#ARGV != 1) { die "usage: perl hapmap.pl /path/to/prefrequency/probelist /path/to/output/probelist\n" }
+
+my $prefrequency_probelist = $ARGV[0];
+my $probelist = $ARGV[1];
+
 my $headers = "rs# alleles chrom pos strand assembly# center protLSID assayLSID panelLSID QCcode NA19625 NA19700 NA19701 NA19702 NA19703 NA19704 NA19705 NA19708 NA19712 NA19711 NA19818 NA19819 NA19828 NA19835 NA19834 NA19836 NA19902 NA19901 NA19900 NA19904 NA19919 NA19908 NA19909 NA19914 NA19915 NA19916 NA19917 NA19918 NA19921 NA20129 NA19713 NA19982 NA19983 NA19714 NA19985 NA19984 NA20128 NA20126 NA20127 NA20277 NA20276 NA20279 NA20282 NA20281 NA20284 NA20287 NA20288 NA20290 NA20289 NA20291 NA20292 NA20295 NA20294 NA20297 NA20300 NA20298 NA20301 NA20302 NA20317 NA20319 NA20322 NA20333 NA20332 NA20335 NA20334 NA20337 NA20336 NA20340 NA20341 NA20343 NA20342 NA20344 NA20345 NA20346 NA20347 NA20348 NA20349 NA20350 NA20351 NA20357 NA20356 NA20358 NA20359 NA20360 NA20363 NA20364 NA20412";
 
 my $hapmap_dir = "/stornext/snfs0/next-gen/yw14-scratch/HAPMAP_r28_I_II+III/";
@@ -15,11 +22,8 @@ my @hapmap_files = qw(
 	genotypes_YRI_r28_nr.b36_fwd.txt
 );
 
-#my $hapmap_dir = "./";
-#my @hapmap_files = qw( hapmap_eg.txt );
-
 my %geno_counts;
-# this will be a hash of rsId => @(major, minor, hetero)
+# this will be a hash of rsId => egeno_sums(major, minor, hetero)
 my @headers = split(/\s/, $headers);
 my %line_vals;
 
@@ -54,26 +58,21 @@ foreach my $hapmap_file (@hapmap_files) {
 				}
 			}
 		}
-		#print $line_vals{"rs#"}.": ".$nn_count."\n";
+		# clear for next line
 		@data = ();
 		%line_vals = ();
 	}
 	close(FIN);
 }
 
-my $all_freq_file = "/stornext/snfs5/next-gen/concordance_analysis/dbSNP/all_freq.fre";
-my $final_freq_file = "/stornext/snfs5/next-gen/concordance_analysis/dbSNP/final_freq.fre";
 
-#my $all_freq_file = "all_freq.fre";
-#my $final_freq_file = "final_freq.fre";
-print STDERR "Generating $final_freq_file ...\n";
-open(FIN, $all_freq_file) or die $!;
-open(FOUT, ">".$final_freq_file) or die $!;
+print STDERR "Generating $probelist ...\n";
+open(FIN, $prefrequency_probelist) or die $!;
+open(FOUT, ">".$probelist) or die $!;
 while (my $line = <FIN>) {
 	chomp($line);
 	$line =~ m/^[^\t]+\t[^\t]+\t([^\t]+).*$/;
 	my $target_rsid = $1;
-	#print "target rsid: $target_rsid\n";
 
 	#do freq calculations
 	if (!exists $geno_counts{$target_rsid}) { next }
