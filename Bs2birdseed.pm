@@ -1,5 +1,4 @@
-#! /usr/bin/perl -w
-
+#!/hgsc_software/perl/latest/bin/perl
 package Concordance::Bs2birdseed;
 
 use strict;
@@ -7,6 +6,7 @@ use warnings;
 use Config::General;
 use File::Copy;
 use Log::Log4perl;
+use Concordance::Utils;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -31,23 +31,9 @@ sub project_name {
 	return $self->{project_name}; #[^\0]+
 }
 
-sub __get_file_list__ {
-	my $self = shift;
-	my $file_extension = "";
-	if (@_) { $file_extension = shift; }
-	my @files = glob($self->path."/*".$file_extension);
-	my $size = @files;
-
-	if ($size == 0) {
-		$error_log->error("no ".$file_extension." files found in ".$self->path."\n");
-		exit;
-	}
-	return @files;
-}
-
 sub execute {
 	my $self = shift;
-	my @files=$self->__get_file_list__(".bs");
+	my @files = Concordance::Utils->get_file_list($self->path, "bs");
 	my $size = @files;
 
 	foreach my $file (@files) {
@@ -73,7 +59,7 @@ sub execute {
 sub move_birdseed_to_project_dir {
 	my $self = shift;
 	if (-e $self->path."/".$self->project_name) {
-		my @files = $self->__get_file_list__(".birdseed");
+		my @files = Concordance::Utils->get_file_list($self->path, "birdseed");
 		foreach my $file (@files) {
 			move($file, $self->path."/".$self->project_name);
 		}
