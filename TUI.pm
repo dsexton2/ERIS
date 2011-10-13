@@ -20,12 +20,45 @@ use Concordance::Judgement;
 use Concordance::RawBsToGeli;
 use Concordance::Utils;
 
+=head1 NAME
+
+Concordance::TUI - user interface to execute the concordance pipeline
+
+=head1 SYNOPSIS
+
+ my $tui = Concordance::TUI->new;
+ $tui->config(%config);
+ $tui->config_file("config.cfg");
+ $tui->execute;
+
+=head1 DESCRIPTION
+
+This module provides a TUI (text user interface) to facilitate operation
+of the concordance pipeline, in part or in whole.  It prompts the user
+to indicate which operations to perform and for the parameters required
+by each operation.  It writes all relevant parameters, i.e.
+configuration values, to a run-specific configuration file for use in
+debugging.
+
+=head2 Methods
+
+=cut
+
+
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $error_screen = Log::Log4perl->get_logger("errorScreenLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 my %pipeline_params = ();
 my %samples = ();
+
+=head3 new
+
+ my $tui = Concordance::TUI->new;
+
+Instantiates a new TUI object.
+
+=cut
 
 sub new {
 	my $self = {};
@@ -35,17 +68,42 @@ sub new {
 	return $self;
 }
 
+=head3 config
+
+ $tui->config(%config_param);
+
+Gets and sets the configuration hash, which contains general configuration values read from a file.
+
+=cut
+
 sub config {
 	my $self = shift;
 	if (@_) { %{ $self->{CONFIG} } = @_; }
 	return %{ $self->{CONFIG} };
 }
 
+=head3 config_file
+
+ $tui->config_file("/log/config/config_01011900_0100.cfg");
+
+Gets ands sets the path to the file to which all configuration items are to be written for this run.
+
+=cut
+
 sub config_file {
 	my $self = shift;
 	if (@_) { $self->{CONFIGFILE} = shift; }
 	return $self->{CONFIGFILE};
 }
+
+=head3 __get_params__
+
+ $self->__get_params__;
+
+Private method to read from a file a list of parameters and validating regexes
+for each module.
+
+=cut
 
 sub __get_params__ {
 	# reads in the parameters from the metadata, and parses the data in
@@ -71,6 +129,15 @@ sub __get_params__ {
 	}
 }
 
+=head3 __read_and_validate_input__
+
+ $self->__read_and_validate_input__("user prompt", "regex");
+
+Private method to prompt the user for input, then to validate that input for the
+given validating regex.
+
+=cut
+
 sub __read_and_validate_input__ {
 	my $self = shift;
 	my $prompt = undef;
@@ -95,6 +162,14 @@ sub __read_and_validate_input__ {
 	return $input;
 }
 
+=head3 __add_to_hash__
+
+ $self->__add_to_hash__("key", "value");
+
+Private method to add instance-specific configuration items to the configuration hash.
+
+=cut
+
 sub __add_to_hash__ {
 	if (@_) {
 		my $self = shift;
@@ -105,16 +180,14 @@ sub __add_to_hash__ {
 	}
 }
 
-sub __test_parm__ {
-	if (!@_) { return 0; }
-	foreach my $path (@_) {
-		if (!-e $path) {
-			$error_log->error("\n");
-			return 0;
-		}
-	}
-	return 1;
-}
+=head3 __write_config_file__
+
+ $self->__write_config_file__;
+
+Writes both general and instance-specific configuration values to the filed
+indicated by the C<config_file> class member.
+
+=cut
 
 sub __write_config_file__ {
 	my $self = shift;
@@ -192,10 +265,19 @@ sub geli_to_bs {
 	$self->set_instance_members("Concordance::GeliToBs");
 }
 
+=head3 set_instance_members
+
+ $self->set_instance_members("Package::Name");
+
+Private method to prompt for user input for a given class, then to instantiate
+an object of the class and assign the values to it.  If the instance accepts
+either the Samples container or the configuration object, pass those too.
+
+=cut
+
 sub set_instance_members {
 	my $self = shift;
 	my $package = shift;
-	my $pass_config_flag = shift;
 	my $instance = $package->new;
 	(my $class = $package) =~ s/^\w+:://g;
 	my %params_and_regexes = %{ $pipeline_params{$class} };
@@ -228,6 +310,15 @@ sub __print_usage__ {
 		"\n";
 }
 
+=head3 get_sample_data
+
+ $self->get_sample_data("/path/to/runid/list");
+
+For a list of run Ids, a container of Sample objects is created form the LIMS
+webservice.
+
+=cut
+
 sub get_sample_data {
 	my $self = shift;
 	my $run_id_list_file = undef;
@@ -248,6 +339,15 @@ sub get_sample_data {
 		die "Failed to populate sample hash with run ids from $run_id_list_file";
 	}
 }
+
+=head3 execute
+
+ $tui->execute;
+
+Prompts the user for the component to execute, and kicks off the process by
+which input is gathered and instance objects are executed.
+
+=cut
 
 sub execute {
 	my $self = shift;
@@ -292,132 +392,10 @@ sub execute {
 
 1;
 
-=head1 NAME
-
-Concordance::TUI - user interface to execute the concordance pipeline
-
-=head1 SYNOPSIS
-
- my $tui = Concordance::TUI->new;
- $tui->config(%config);
- $tui->config_file("config.cfg");
- $tui->execute;
-
-=head1 DESCRIPTION
-
-This module provides a TUI (text user interface) to facilitate operation
-of the concordance pipeline, in part or in whole.  It prompts the user
-to indicate which operations to perform and for the parameters required
-by each operation.  It writes all relevant parameters, i.e.
-configuration values, to a run-specific configuration file for use in
-debugging.
-
-=head2 Methods
-
-=over 12
-
-=item C<new>
-
-Returns a new Concordance::TUI instance.
-
-=item C<config>
-
-Accessor/mutator method for a General::Config object, containing
-run-independent configuration values.
-
-=item C<config_file>
-
-Accessor/mutator method for an instance-specific configuration file, to
-which all instance-specific configuration values shall be written.
-
-Example:
-
- $tui->config_file("/foo/bar.cfg");
- $config_path = $tui->config_file;
-
-=item C<__read_and_validate_input__>
-
-Private utility method to prompt for user input and validate according to a
-regex provided.  Returns the validated input
-
-Example:
-
- $input = __read_and_validate__input("Enter CSV path: ", '\w+.csv');
-
-=item C<__add_to_hash__>
-
-Private method to add key/value pairs to the configuration value hash.
-
-Example:
-
- $self->__add_to_hash__("key", "value");
-
-=item C<__test_parm__>
-
-
-
-=item C<__write_config_file__>
-
-Private method to print sorted instance-specific configuration values to
-the file indicated in C<config_file>.
-
-Example:
-
- $self->__write_config_file__;
-
-=item C<build_geli_and_bs>
-
-Wrapper method to call Concordance::BuildGeliAndBS module, prompting the
-user for the necessary parameters.
-
-Example:
-
- $self->build_geli_and_bs;
-
-=item C<bs_2_birdseed>
-
-
-
-=item C<egt_ill_prep>
-
-
-
-=item C<msub_illumina_egeno>
-
-
-
-=item C<birdseed_2_csv>
-
-
-
-=item C<bam_2_csfasta>
-
-
-
-=item C<change_aa_to_0>
-
-
-=item C<__print_usage__>
-
-Prints a usage message to allow the user to select the desired tasks.
-
-Example:
-
- __print_usage__;
-
-=item C<execute>
-
-Main entry point for the module.
-
-Example:
-
- $tui->execute;
-
-=back
 
 =head1 LICENSE
 
-This script is the property of Baylor College of Medicine.
+GPLv3.
 
 =head1 AUTHOR
 
