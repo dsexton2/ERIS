@@ -11,7 +11,7 @@ $pull = XML::TreePuller->new(location => $ARGV[0]);
 $pull->reader; #return the XML::LibXML::Reader object
 
 my %field_values;
-my @field_order = qw(chromosome asnFrom rsId Seq5 Seq3 ref_allele var_allele);
+my @field_order = qw(chromosome physMapInt rsId Seq5 Seq3 ref_allele var_allele);
 
 $pull->iterate_at('/ExchangeSet/Rs', 'subtree');
 
@@ -41,13 +41,13 @@ while ($element = $pull->next) {
 			and $Assembly->attribute("groupLabel") eq "GRCh37.p2") {
 			if ((my $Component = $Assembly->get_elements("Component"))->attribute("orientation") eq "fwd") {
 				$field_values{"chromosome"} = $Component->attribute("chromosome");
-				$field_values{"asnFrom"} = $Component->get_elements("MapLoc")->attribute("asnFrom");
+				$field_values{"physMapInt"} = $Component->get_elements("MapLoc")->attribute("physMapInt");
 			}
 			if ((my $Component = $Assembly->get_elements("Component"))->attribute("orientation") == undef) {
 				if ($Component->attribute("chromosome") != undef) {
 					if ($Component->get_elements("MapLoc")->attribute("orient") eq "forward") {
 						$field_values{"chromosome"} = $Component->attribute("chromosome");
-						$field_values{"asnFrom"} = $Component->get_elements("MapLoc")->attribute("asnFrom");
+						$field_values{"physMapInt"} = $Component->get_elements("MapLoc")->attribute("physMapInt");
 					}
 				}
 			}
