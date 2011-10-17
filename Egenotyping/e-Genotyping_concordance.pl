@@ -113,8 +113,8 @@ while(my $line = <FIN>) {
 	my $chr_pos_key = "chr".$probe_with_cs_vals[0]."_".$probe_with_cs_vals[1];
 	$heterozygous_freq{$chr_pos_key} = $probe_with_cs_vals[10];
 	$variant_freq{$chr_pos_key} = $probe_with_cs_vals[11];
-#	print STDOUT $chr_pos_key."\t";
 }
+
 print STDOUT "\n";
 close(FIN);
 
@@ -186,7 +186,7 @@ while(<FIN>) {
 	my @b=split(/#/,$a[2]);
 	$ref_num=0;
 	$alt_num=0;
-	for (my $i = 0; $i < length(@b); $i++) {
+	for (my $i = 0; $i < scalar @b; $i++) {
 		my @c=split(//,$b[$i]);
 		if($c[1] eq "0") {
 				$ref_num++;
@@ -270,9 +270,8 @@ foreach my $birdseed_file(@birdseed_files) {
 		my @a = split(/\s+/, $line);
 		($a[0] = "chr".$a[0]) unless ($a[0] =~ /^chr(.*?)$/);
 		my $temp = $a[0]."_".$a[1];
-		print STDOUT $temp."\t";
 
-		if ($#a < 4 and $a[3] eq "00" and !exists($variant_freq{$temp})) {
+		if ($#a < 3 and $a[3] eq "00" and !exists($variant_freq{$temp})) {
 			$unmatched_birdseed_lines++;
 			next;
 		}
@@ -373,7 +372,7 @@ foreach my $birdseed_file(@birdseed_files) {
 			print FOUT "$birdseed_file\n";
 	}
 	print STDOUT "\n";
-	print STDOUT "$snp_arraycnt\t$arr_seq\t$match_tot_num\t$unmatched_birdseed_lines\n";
+	print STDOUT "$birdseed_file:\t$snp_arraycnt\t$arr_seq\t$match_tot_num\t$unmatched_birdseed_lines\n";
 }
 
 sub round {
