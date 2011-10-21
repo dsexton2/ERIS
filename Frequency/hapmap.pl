@@ -1,13 +1,12 @@
 #!/hgsc_software/perl/latest/bin/perl
 
+use strict;
+
 if ($#ARGV != 1) { die "usage: perl hapmap.pl /path/to/prefrequency/probelist /path/to/output/probelist\n" }
 
 my $prefrequency_probelist = $ARGV[0];
 my $probelist = $ARGV[1];
-
-my $headers = "rs# alleles chrom pos strand assembly# center protLSID assayLSID panelLSID QCcode NA19625 NA19700 NA19701 NA19702 NA19703 NA19704 NA19705 NA19708 NA19712 NA19711 NA19818 NA19819 NA19828 NA19835 NA19834 NA19836 NA19902 NA19901 NA19900 NA19904 NA19919 NA19908 NA19909 NA19914 NA19915 NA19916 NA19917 NA19918 NA19921 NA20129 NA19713 NA19982 NA19983 NA19714 NA19985 NA19984 NA20128 NA20126 NA20127 NA20277 NA20276 NA20279 NA20282 NA20281 NA20284 NA20287 NA20288 NA20290 NA20289 NA20291 NA20292 NA20295 NA20294 NA20297 NA20300 NA20298 NA20301 NA20302 NA20317 NA20319 NA20322 NA20333 NA20332 NA20335 NA20334 NA20337 NA20336 NA20340 NA20341 NA20343 NA20342 NA20344 NA20345 NA20346 NA20347 NA20348 NA20349 NA20350 NA20351 NA20357 NA20356 NA20358 NA20359 NA20360 NA20363 NA20364 NA20412";
-
-my $hapmap_dir = "/stornext/snfs0/next-gen/yw14-scratch/HAPMAP_r28_I_II+III/";
+my %geno_counts; # this will be a hash of rsId => egeno_sums objects
 my @hapmap_files = qw(
 	genotypes_ASW_r28_nr.b36_fwd.txt
 	genotypes_CEU_r28_nr.b36_fwd.txt
@@ -21,11 +20,23 @@ my @hapmap_files = qw(
 	genotypes_TSI_r28_nr.b36_fwd.txt
 	genotypes_YRI_r28_nr.b36_fwd.txt
 );
+my $hapmap_dir = "/stornext/snfs0/next-gen/yw14-scratch/HAPMAP_r28_I_II+III/";
 
-my %geno_counts;
-# this will be a hash of rsId => egeno_sums(major, minor, hetero)
-my @headers = split(/\s/, $headers);
-my %line_vals;
+# open the probelist, for each rsId make a new hash item which points to an
+# egeno_sums object; assign the current line to the instance
+open(FIN_PROBELIST, $prefrequency_probelist) or die $!;
+while (my $line = <FIN_PROBELIST>) {
+	chomp($line);
+	my @line_vals_by_col = split(/\t/, $line);
+	
+	my $target_rsid = $line_vals_by_col[2];
+	if (!exists $geno_counts{$target_rsid}) {
+		$geno_counts{$target_rsid} = egeno_sums->new;
+		$geno_counts{$target_rsid}->probelist_line($line);
+	}
+}
+close(FIN_PROBELIST);
+print STDERR "hash size after reading probelist: ".(scalar keys %geno_counts)."\n";
 
 foreach my $hapmap_file (@hapmap_files) {
 	print STDERR "Processing $hapmap_dir"."$hapmap_file ...\n";
@@ -33,55 +44,62 @@ foreach my $hapmap_file (@hapmap_files) {
 	while (my $line = <FIN>) {
 		my @data = split(/\s/, $line);
 		if ($data[0] eq "rs#") { next } #skip the header row
-		foreach $header (@headers) {
-			$line_vals{$header} = shift @data;
+		# $data[0] = rsId
+		# $data[1] = alleles
+		# $data[x] =~ m/\w\w/ = genotyping call
+		# use the HAPMAP headers to put the values of each line into a hash
+		if (!exists($geno_counts{$data[0]})) {
+			print STDERR "could not match rsId against probelist: ".$data[0].
+				" in hapmap file ".$hapmap_file."\n";
+			next;
 		}
-		$line_vals{"alleles"} =~ m/(\w)\/(\w)/;
+
+		# get the alleles from the probelist
+		my @probe_data = split(/\t/, $geno_counts{$data[0]}->probelist_line);
+		my $probe_alleles = $probe_data[5].$probe_data[6];
+		# figure out if the HAPMAP alleles and genotypes have been translated
+		my $matched_allele = match_alleles($probe_alleles, $data[1]);
+
+		if ($matched_allele !~ m/(\w)(\w)$/) {
+			print STDERR "Failed to match $probe_alleles with ".$data[1].
+				" for rsId ".$data[0]."\n";
+			next;
+		}
+		# based on translation (if any), figure out what to look for in the genotypes
 		my $major_homo = $1.$1;
 		my $minor_homo = $2.$2;
 		my $hetero = $1.$2;
 
-		if (!exists $geno_counts{$line_vals{"rs#"}}) {
-			$geno_counts{$line_vals{"rs#"}} = egeno_sums->new;
-		}
-
-		foreach my $key (keys %line_vals) {
-			if ($key =~ m/^NA\d{5}/) {
-				if ($line_vals{$key} eq $major_homo) {
-					$geno_counts{$line_vals{"rs#"}}->mah(1);
+		# iterate on the genotypes, and record them in the egeno_sums instance
+		foreach my $column (@data) {
+			if ($column =~ m/\w\w/) {
+				if ($column eq $major_homo) {
+					$geno_counts{$data[0]}->major_homo(1);
 				}
-				elsif ($line_vals{$key} eq $minor_homo) {
-					$geno_counts{$line_vals{"rs#"}}->mih(1);
+				elsif ($column eq $minor_homo) {
+					$geno_counts{$data[0]}->minor_homo(1);
 				}
-				elsif ($line_vals{$key} eq $hetero) {
-					$geno_counts{$line_vals{"rs#"}}->het(1);
+				elsif ($column eq $hetero) {
+					$geno_counts{$data[0]}->hetero(1);
 				}
 			}
 		}
 		# clear for next line
 		@data = ();
-		%line_vals = ();
 	}
 	close(FIN);
 }
 
-
 print STDERR "Generating $probelist ...\n";
-open(FIN, $prefrequency_probelist) or die $!;
 open(FOUT, ">".$probelist) or die $!;
-while (my $line = <FIN>) {
-	chomp($line);
-	$line =~ m/^[^\t]+\t[^\t]+\t([^\t]+).*$/;
-	my $target_rsid = $1;
-
-	#do freq calculations
-	if (!exists $geno_counts{$target_rsid}) { next }
-	my $major_count = $geno_counts{$target_rsid}->mah;
-	my $minor_count = $geno_counts{$target_rsid}->mih;
-	my $hetero_count = $geno_counts{$target_rsid}->het;
+foreach my $target_rsId (keys %geno_counts) {
+	#do frequency calculations
+	my $major_count = $geno_counts{$target_rsId}->major_homo;
+	my $minor_count = $geno_counts{$target_rsId}->minor_homo;
+	my $hetero_count = $geno_counts{$target_rsId}->hetero;
 	my $total = $major_count + $minor_count + $hetero_count;
 
-	print FOUT $line;
+	print FOUT $geno_counts{$target_rsId}->probelist_line;
 	if ($total != 0) {
 		print FOUT ($major_count / $total)."\t".($hetero_count / $total)."\t".($minor_count / $total);
 	}
@@ -94,33 +112,69 @@ while (my $line = <FIN>) {
 close(FIN);
 close(FOUT);
 
+# figure out if the probe alleles and HAPMAP alleles are the same or differ by
+# translation; we'll use this to figure out how to count the genotypes
+sub match_alleles {
+	my $probe_allele = shift;
+	my $hapmap_allele = shift;
+
+	(my $complement_probe_allele = $probe_allele) =~ tr/AGCT/TCGA/;
+	# hapmap allele comes in like A/G
+	$hapmap_allele =~ s/\///;
+
+	if ($probe_allele eq $hapmap_allele) {
+		# if it's a one-to-one correspondence, e.g. A/G A/G, return ref=A,var=G
+		return $probe_allele;
+	}
+	elsif (reverse($probe_allele) eq $hapmap_allele) {
+		# if the alleles are reversed, e.g. A/G G/A, return ref=A,var=G
+		return $probe_allele;
+	}
+	elsif ($complement_probe_allele eq $hapmap_allele) {
+		# if the allele is the complement, e.g. A/G T/C, return ref=G,var=A
+		return $complement_probe_allele;
+	}
+	elsif (reverse($complement_probe_allele) eq $hapmap_allele) {
+		# if the allele is the reverse complement, e.g. A/G C/T, return ref=G,var=A
+		return $complement_probe_allele;
+	}
+	else { return "bad alleles" }
+}
+
 package egeno_sums;
 
 sub new {
 	my $self = {};
-	$self->{mah} = 0;
-	$self->{mih} = 0;
-	$self->{het} = 0;
+	$self->{probelist_line} = "";
+	$self->{major_homo} = 0;
+	$self->{minor_homo} = 0;
+	$self->{hetero} = 0;
 	bless($self);
 	return $self;
 }
 
-sub mah {
+sub probelist_line {
 	my $self = shift;
-	if (@_) { $self->{mah} += 1 }
-	return $self->{mah};
+	if (@_) { $self->{probelist_line} = shift }
+	return $self->{probelist_line};
 }
 
-sub mih {
+sub major_homo {
 	my $self = shift;
-	if (@_) { $self->{mih} += 1 }
-	return $self->{mih};
+	if (@_) { $self->{major_homo} += 1 }
+	return $self->{major_homo};
 }
 
-sub het {
+sub minor_homo {
 	my $self = shift;
-	if (@_) { $self->{het} += 1 }
-	return $self->{het};
+	if (@_) { $self->{minor_homo} += 1 }
+	return $self->{minor_homo};
+}
+
+sub hetero {
+	my $self = shift;
+	if (@_) { $self->{hetero} += 1 }
+	return $self->{hetero};
 }
 
 1;
