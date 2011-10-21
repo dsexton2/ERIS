@@ -26,7 +26,6 @@ my %variant_freq;
 my $snp_arraycnt; # total number of lines in SNP array file
 my $arr_seq; # number of SNP array lines overlapping with sequence
 my $match_tot_num; # number of SNP IDs considered for matching IDs
-
 my $unmatched_birdseed_lines;
 
 my %color_space = (
@@ -178,26 +177,27 @@ my $noise_num=0;
 my $total_num=0;
 
 open(FOUT,">".$con_result) or die $!;
-open(FIN, $frequency_file) or die $!;
+open(FIN_FREQUENCY_FILE, $frequency_file) or die $!;
 
-while(<FIN>) {
+while(<FIN_FREQUENCY_FILE>) {
+	# 1	100000827	C0#C0#T1...
 	chomp;
-	my @a=split(/\t/);
-	my @b=split(/#/,$a[2]);
-	$ref_num=0;
-	$alt_num=0;
-	for (my $i = 0; $i < scalar @b; $i++) {
-		my @c=split(//,$b[$i]);
-		if($c[1] eq "0") {
-				$ref_num++;
-				$ref_seq=$c[0];
+	my @frequency_file_values = split(/\t/);
+	my @allele_calls = split(/#/,$frequency_file_values[2]);
+	$ref_num = 0;
+	$alt_num = 0;
+	foreach my $allele_call (@allele_calls) {
+		my @var_call_values = split(//,$allele_call);
+		if($var_call_values[1] eq "0") {
+			$ref_num++;
+			$ref_seq = $var_call_values[0];
 		}
-		elsif($c[1] eq "1") {
-				$alt_num++;
-				$alt_seq=$c[0];
+		elsif($var_call_values[1] eq "1") {
+			$alt_num++;
+			$alt_seq = $var_call_values[0];
 		}
 		else {
-				$noise_num++;
+			$noise_num++;
 		}
 	}
 	$total_num = $ref_num + $alt_num;
@@ -212,7 +212,7 @@ while(<FIN>) {
 		else {
 				$genotype = $ref_seq.$alt_seq;
 		}
-		my $temp = "chr".$a[0]."_".$a[1];
+		my $temp = "chr".$frequency_file_values[0]."_".$frequency_file_values[1];
 		my $temp_geno = $ref_seq.$ref_seq;
 		if($genotype ne $temp_geno) {
 			$genotype = $genotype.$ref_seq;
@@ -220,8 +220,9 @@ while(<FIN>) {
 		}
 	}
 }
+close(FIN_FREQUENCY_FILE);
 
-close(FIN);
+my $fre_size = scalar keys %fre;
 print STDERR "Done with Frequency hashing\n";
 
 my $cor_num=0;
@@ -260,26 +261,29 @@ foreach my $birdseed_file(@birdseed_files) {
 	$unmatched_birdseed_lines = 0;
 	
 	print STDOUT "matching against $birdseed_file ...\n";
-	open(FIN, $birdseed_file);
+	open(FIN_BIRDSEED_FILE, $birdseed_file);
 
-	while(my $line = <FIN>) {
+	while(my $line = <FIN_BIRDSEED_FILE>) {
+		# chromosome	position ref_allele genotyping_call
+		# 1	534247	C	CT
 		$snp_arraycnt++;
 		next unless ($line !~ /^#/);
 	
 		chomp($line);
-		my @a = split(/\s+/, $line);
-		($a[0] = "chr".$a[0]) unless ($a[0] =~ /^chr(.*?)$/);
-		my $temp = $a[0]."_".$a[1];
+		my @birdseed_values = split(/\s+/, $line);
+		($birdseed_values[0] = "chr".$birdseed_values[0]) unless ($birdseed_values[0] =~ /^chr(.*?)$/);
+		my $temp = $birdseed_values[0]."_".$birdseed_values[1];
 
-		if ($#a < 3 and $a[3] eq "00" and !exists($variant_freq{$temp})) {
+		if ($#birdseed_values < 3 and $birdseed_values[3] eq "00" and !exists($variant_freq{$temp})) {
 			$unmatched_birdseed_lines++;
 			next;
 		}
 
 		if(exists($fre{$temp})) {
 			$arr_seq++;
+			# $fre{$temp} = AAT
 			my @b = split(//, $fre{$temp});
-			my @c = split(//, $a[3]);
+			my @c = split(//, $birdseed_values[3]);
 			if($c[0] eq $b[0] || $c[0] eq $b[1] || $c[1] eq $b[1] || $c[1] eq $b[0]) {
 					$cor_num++;
 			}
@@ -343,7 +347,7 @@ foreach my $birdseed_file(@birdseed_files) {
 			}
 		}
 	}
-	close(FIN);
+	close(FIN_BIRDSEED_FILE);
 
 	my $tot_num = 0;
 	$match_tot_num = $cor_num + $non_num;
@@ -366,7 +370,7 @@ foreach my $birdseed_file(@birdseed_files) {
 			$no_match = round($no_match * 10000.0) * 0.0001;
 			$co = round($co * 10000.0) * 0.0001;
 			#print FOUT "$3\t$exact_match\t$exact_match_AB\t$exact_match_BB\t$one_match\t$one_match_A\t$one_match_B\t$no_match\t$co\n";
-			print FOUT "$3\t$exact_match\t$exact_match_AB\t$exact_match_BB\t$one_match\t$one_match_A\t$one_match_B\t$no_match\t$co\t$snp_arraycnt\t$arr_seq\t$match_tot_num\n";
+			print FOUT "$3\t$exact_match\t$exact_match_AB\t$exact_match_BB\t$one_match\t$one_match_A\t$one_match_B\t$no_match\t$co\t$snp_arraycnt\t$fre_size\t$arr_seq\t$match_tot_num\n";
 	}
 	else {
 			print FOUT "$birdseed_file\n";
