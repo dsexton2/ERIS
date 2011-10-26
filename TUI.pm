@@ -331,8 +331,8 @@ sub get_sample_data {
 	my $run_id_list = do { local $/; <FIN> };
 	close(FIN);
 	# run ids are likely copied from a spreadsheet, so one per line
-	$run_id_list = s/\n/,/g;
-	$run_id_list = s/(.*),/$1/;
+	$run_id_list =~ s/\n/,/g;
+	$run_id_list =~ s/(.*),/$1/;
 	%samples = Concordance::Utils->populate_sample_info_hash($run_id_list);
 	if (scalar keys %samples == 0) {
 		$error_log->error("Failed to populate sample hash with run ids from $run_id_list_file\n");
