@@ -66,7 +66,7 @@ sub execute {
 
 sub get_rules {
 	my $self = shift;
-	open(FIN, "/users/p-qc/dev/Concordance/config/judgement_rules") or die $!;
+	open(FIN, "/users/p-qc/dev_concordance_pipeline/Concordance/config/judgement_rules") or die $!;
 	my $rules_content = do { local $/; <FIN> };
 	close(FIN);
 	my $project_name = $self->project_name; # so I don't have to do interpolation work-arounds
