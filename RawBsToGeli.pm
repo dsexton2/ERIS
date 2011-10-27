@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Config::General;
 use Log::Log4perl;
-use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
+use Concordance::Common::Scheduler;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -93,12 +93,13 @@ sub execute {
 		" R=".$self->reference_path.
 		" O=$file.geli";
 		$file =~ /.*\/(.*)\.birdseed\.data\.txt$/;
-		my $scheduler = new Concordance::RawBsToGeli::Scheduler($1."_toGELI", $cmd);
-		$scheduler->setMemory(2000);
-		$scheduler->setNodeCores(2);
-		$scheduler->setPriority('normal');
-		$debug_log->debug("Submitting job for conversion to GELI with command: $cmd\n");
-		$scheduler->runCommand;
+		my $scheduler = Concordance::Common::Scheduler->new;
+		$scheduler->command($cmd);
+		$scheduler->job_name_prefix($1."_toGELI");
+		$scheduler->cores(2);
+		$scheduler->memory(2000);
+		$scheduler->priority("normal");
+		$scheduler->execute;
 	}
 }
 

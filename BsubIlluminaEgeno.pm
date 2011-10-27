@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use diagnostics;
 use Log::Log4perl;
-use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
+use Concordance::Common::Scheduler;
 
 if(!Log::Log4perl->initialized()) { print "Warning: Log4perl has not been initialized\n" }
 
@@ -68,12 +68,13 @@ sub execute {
 		$com_array[$i] = $command;
 		$i++;
 
-		my $scheduler = new Concordance::BsubIlluminaEgeno::Scheduler("$i-eGT-$SNP_array", $command);
-		$scheduler->setMemory(2000);
-		$scheduler->setNodeCores(2);
-		$scheduler->setPriority('normal');
-		$debug_log->debug("Submitting job with command: $command\n");
-		if (!$self->debug_flag) { $scheduler->runCommand }
+		my $scheduler = Concordance::Common::Scheduler->new;
+		$scheduler->command($command);
+		$scheduler->job_name_prefix("$i-eGT-$SNP_array");
+		$scheduler->cores(2);
+		$scheduler->memory(2000);
+		$scheduler->priority("normal");
+		if (!$self->debug_flag) { $scheduler->execute }
 	}
 	close(FIN);
 }

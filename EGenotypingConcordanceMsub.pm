@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
-use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
+use Concordance::Common::Scheduler;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -126,12 +126,14 @@ sub execute {
 		my $csfasta_files = join(',', @line_vals);
 
 		my $command = "\"/users/p-qc/dev_concordance_pipeline/Concordance/Egenotyping/e-Genotyping_concordance.pl $analysis_id $csfasta_files ".$self->snp_array." ".$self->probe_list." ".$self->sequencing_type." \"\;";
-		my $scheduler = new Concordance::Bam2csfasta::Scheduler($job_counter++."\_eGeno\_concor.job", $command);
-		$scheduler->setMemory(2000);
-		$scheduler->setNodeCores(2);
-		$scheduler->setPriority('normal');
-		$debug_log->debug("Submitting job with command: $command\n");
-		$scheduler->runCommand;
+
+		my $scheduler = Concordance::Common::Scheduler->new;
+		$scheduler->command($command);
+		$scheduler->job_name_prefix($job_counter++."\_eGeno\_concor.job");
+		$scheduler->cores(2);
+		$scheduler->memory(2000);
+		$scheduler->priority("normal");
+		$scheduler->execute;
 	}
 	close(FIN);
 }

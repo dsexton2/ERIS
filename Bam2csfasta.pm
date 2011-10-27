@@ -5,7 +5,7 @@ use warnings;
 use diagnostics;
 use Config::General;
 use Log::Log4perl;
-use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
+use Concordance::Common::Scheduler;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -62,12 +62,13 @@ sub __submit__ {
 		" $output_csfasta_file";
 	print $fh "$sample_id,$output_csfasta_file\n";
 
-	my $scheduler = new Concordance::Bam2csfasta::Scheduler($sample_id, $command);
-	$scheduler->setMemory(2000);
-	$scheduler->setNodeCores(2);
-	$scheduler->setPriority('normal');
-	$debug_log->debug("Submitting job with command: $command\n");
-	if (!$self->debug_flag) { $scheduler->runCommand }
+	my $scheduler = Concordance::Common::Scheduler->new;
+	$scheduler->command($command);
+	$scheduler->job_name_prefix($sample_id);
+	$scheduler->cores(2);
+	$scheduler->memory(2000);
+	$scheduler->priority("normal");
+	if (!$self->debug_flag) { $scheduler->execute }
 }
 
 sub execute {
