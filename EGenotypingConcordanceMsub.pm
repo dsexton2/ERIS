@@ -45,6 +45,7 @@ sub new {
 	$self->{egeno_list} = undef;
 	$self->{snp_array} = undef;
 	$self->{probe_list} = undef;
+	$self->{sequencing_type} = undef;
 	bless($self);
 	return $self;
 }
@@ -91,6 +92,20 @@ sub probe_list {
 	return $self->{probe_list}; #[^\0]+
 }
 
+=head3 sequencing_type
+
+ $egeno_msub->sequencing_type("solid");
+
+Gets and sets the sequencing type, e.g. solid or illumina. 
+
+=cut
+
+sub sequencing_type {
+	my $self = shift;
+	if (@_) { $self->{sequencing_type} = shift }
+	return $self->{sequencing_type}; #[^\0]+
+}
+
 =head3 execute
 
  $egeno_msub->execute;
@@ -110,7 +125,7 @@ sub execute {
 		my $analysis_id = shift @line_vals;
 		my $csfasta_files = join(',', @line_vals);
 
-		my $command = "\"/users/p-qc/dev/Concordance/Egenotyping/e-Genotyping_concordance.pl $analysis_id $csfasta_files ".$self->snp_array." ".$self->probe_list." \"\;";
+		my $command = "\"/users/p-qc/dev_concordance_pipeline/Concordance/Egenotyping/e-Genotyping_concordance.pl $analysis_id $csfasta_files ".$self->snp_array." ".$self->probe_list." ".$self->sequencing_type." \"\;";
 		my $scheduler = new Concordance::Bam2csfasta::Scheduler($job_counter++."\_eGeno\_concor.job", $command);
 		$scheduler->setMemory(2000);
 		$scheduler->setNodeCores(2);
