@@ -58,17 +58,16 @@ foreach my $hapmap_file (@hapmap_files) {
 		my @probe_data = split(/\t/, $geno_counts{$data[0]}->probelist_line);
 		my $probe_alleles = $probe_data[5].$probe_data[6];
 		# figure out if the HAPMAP alleles and genotypes have been translated
-		my $matched_allele = match_alleles($probe_alleles, $data[1]);
-
-		if ($matched_allele !~ m/(\w)(\w)$/) {
+		my @matched_allele = match_alleles($probe_alleles, $data[1]);
+		if (scalar @matched_allele != 3) {
 			print STDERR "Failed to match $probe_alleles with ".$data[1].
 				" for rsId ".$data[0]."\n";
 			next;
 		}
 		# based on translation (if any), figure out what to look for in the genotypes
-		my $major_homo = $1.$1;
-		my $minor_homo = $2.$2;
-		my $hetero = $1.$2;
+		my $major_homo = $matched_allele[0];
+		my $minor_homo = $matched_allele[1];
+		my $hetero = $matched_allele[2];
 
 		# iterate on the genotypes, and record them in the egeno_sums instance
 		foreach my $column (@data) {
@@ -79,7 +78,9 @@ foreach my $hapmap_file (@hapmap_files) {
 				elsif ($column eq $minor_homo) {
 					$geno_counts{$data[0]}->minor_homo(1);
 				}
-				elsif ($column eq $hetero) {
+				elsif ($column eq $hetero || $column eq reverse $hetero) {
+					# we don't care about the order, just so long as
+					# it isn't the major or minor genotype call
 					$geno_counts{$data[0]}->hetero(1);
 				}
 			}
@@ -114,6 +115,10 @@ close(FOUT);
 
 # figure out if the probe alleles and HAPMAP alleles are the same or differ by
 # translation; we'll use this to figure out how to count the genotypes
+# return @;
+#	[0] = major homozygous
+#	[1] = minor homozygous
+#	[2] = heterozygous
 sub match_alleles {
 	my $probe_allele = shift;
 	my $hapmap_allele = shift;
@@ -122,23 +127,41 @@ sub match_alleles {
 	# hapmap allele comes in like A/G
 	$hapmap_allele =~ s/\///;
 
+	my @genotypes;
+
 	if ($probe_allele eq $hapmap_allele) {
 		# if it's a one-to-one correspondence, e.g. A/G A/G, return ref=A,var=G
-		return $probe_allele;
+		my @alleles = split(//, $probe_allele);
+		push @genotypes, $alleles[0].$alleles[0]; # AA
+		push @genotypes, $alleles[1].$alleles[1]; # GG
+		push @genotypes, $alleles[0].$alleles[1]; # AG
+		return @genotypes;
 	}
 	elsif (reverse($probe_allele) eq $hapmap_allele) {
 		# if the alleles are reversed, e.g. A/G G/A, return ref=A,var=G
-		return $probe_allele;
+		my @alleles = split(//, $probe_allele);
+		push @genotypes, $alleles[0].$alleles[0]; # AA
+		push @genotypes, $alleles[1].$alleles[1]; # GG
+		push @genotypes, $alleles[1].$alleles[0]; # GA 
+		return @genotypes;
 	}
 	elsif ($complement_probe_allele eq $hapmap_allele) {
 		# if the allele is the complement, e.g. A/G T/C, return ref=G,var=A
-		return $complement_probe_allele;
+		my @alleles = split(//, $complement_probe_allele);
+		push @genotypes, $alleles[0].$alleles[0]; # TT
+		push @genotypes, $alleles[1].$alleles[1]; # CC
+		push @genotypes, $alleles[0].$alleles[1]; # TC
+		return @genotypes;
 	}
 	elsif (reverse($complement_probe_allele) eq $hapmap_allele) {
 		# if the allele is the reverse complement, e.g. A/G C/T, return ref=G,var=A
-		return $complement_probe_allele;
+		my @alleles = split(//, $complement_probe_allele);
+		push @genotypes, $alleles[0].$alleles[0]; # TT
+		push @genotypes, $alleles[1].$alleles[1]; # CC
+		push @genotypes, $alleles[1].$alleles[0]; # CT
+		return @genotypes;
 	}
-	else { return "bad alleles" }
+	else { return () }
 }
 
 package egeno_sums;
