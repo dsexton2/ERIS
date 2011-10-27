@@ -3,19 +3,21 @@
 use strict;
 use warnings;
 use diagnostics;
-use Inline Ruby => 'require "/stornext/snfs5/next-gen/Illumina/ipipe/lib/Scheduler.rb"';
+use Concordance::Common::Scheduler;
 
 if ($#ARGV != 1) { die "usage: perl msub_hapmap.pl /path/to/prefrequency/probelist /path/to/output/probelist\n" }
 
 my $prefrequency_probelist = $ARGV[0];
 my $probelist = $ARGV[1];
 
-my $command = "/users/p-qc/dev/Concordance/Frequency/hapmap.pl ".
+my $command = "/users/p-qc/dev_concordance_pipeline/Concordance/Frequency/hapmap.pl ".
 	$prefrequency_probelist." ".$probelist;
 my $job_name = "add_freq_to_probelist";
 
-my $scheduler = new Scheduler($job_name, $command);
-$scheduler->setMemory(28000);
-$scheduler->setNodeCores(2);
-$scheduler->setPriority('normal');
-$scheduler->runCommand;
+my $scheduler = Concordance::Common::Scheduler->new;
+$scheduler->command($command);
+$scheduler->job_name_prefix($job_name);
+$scheduler->cores(2);
+$scheduler->memory(28000);
+$scheduler->priority("normal");
+$scheduler->execute;
