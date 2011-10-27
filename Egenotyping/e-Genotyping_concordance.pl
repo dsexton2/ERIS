@@ -4,12 +4,14 @@ use warnings;
 use strict;
 use diagnostics;
 
-if ($#ARGV != 3) { die "usage: perl e-Genotyping_concordance.pl analysis_id /comma-delimited/paths/to/csfasta SNP_array /path/to/probelist\n" }
+if (scalar @ARGV != 5) { die "usage: perl e-Genotyping_concordance.pl analysis_id /comma-delimited/paths/to/csfasta SNP_array /path/to/probelist <sequencing-type[solid|illumina]>\n" }
 
 my $analysis_id = $ARGV[0];
-my @csfasta_files = split(/,/, $ARGV[1]);
+my @input_files = split(/,/, $ARGV[1]);
 my $SNP_array=$ARGV[2];
 my $probe_file = $ARGV[3];
+my $sequencing_type = $ARGV[4];
+
 
 my $con_result = $analysis_id.".birdseed.txt";
 my $frequency_file = $analysis_id.".fre";
@@ -121,34 +123,92 @@ my $SNP_color="";
 my %found;
 my $SNP_base;
 
-foreach my $csfasta_file(@csfasta_files) {
-	open(FIN, $csfasta_file) or die $!;
-	print STDERR "Processing $csfasta_file\n";
-	while (my $seq = <FIN>) {
-		chomp($seq);
-		next unless ($seq !~ /^>/ and $seq !~ /^#/);
-	
-		for(my $i = 1;$i <= length($seq)-24; $i++) {
-			my $match = substr($seq, $i, 11)." ".substr($seq, $i+13, 11);
-			if(exists($probes{$match})) {
-				$SNP_color = substr($seq, $i+11,2);	
-				if($SNP_color eq $ref_allele_cs{$match}) {
-					$SNP_base = $ref_allele_bs{$match}."0";
-				}
-				elsif($SNP_color eq $alt_allele_cs{$match}) {
-					$SNP_base = $alt_allele_bs{$match}."1";
-				}
-				else {
-					$SNP_base = "S3";
-				}
-			
-				(!exists($found{$probes{$match}})) ? 
-					$found{$probes{$match}} = $SNP_base : 
-					$found{$probes{$match}} .= "#".$SNP_base;
-			} 	
+sub read_bz2_files {
+	foreach my $bz2_file(@input_files) {
+		if($bz2_file =~ /\.bz2$/) {
+			open(FIN_BZ2_FILE,"bzip2 -dc $bz2_file | ") or die $!;
 		}
+		else {
+			open(FIN_BZ2_FILE, $bz2_file) or die $!;
+		}
+		print STDERR "Processing $bz2_file\n";
+		my $read = 0;
+		while (my $seq = <FIN_BZ2_FILE>) {
+			chomp($seq);
+			if ($seq =~ m/^\@/) {
+				$read = 1;
+				next;
+			}
+			if ($seq =~ m/^\+/) {
+				$read = 0;
+				next;
+			}
+			if ($read == 0) { next }
+		
+			for(my $i = 0; $i <= length($seq)-31; $i++) {
+				my $match = substr($seq, $i, 15)." ".substr($seq, $i+16, 15);
+				if(exists($probes{$match})) {
+					$SNP_color = substr($seq, $i+15,1);	
+					if($SNP_color eq $ref_allele_bs{$match}) {
+						$SNP_base = $ref_allele_bs{$match}."0";
+					}
+					elsif($SNP_color eq $alt_allele_bs{$match}) {
+						$SNP_base = $alt_allele_bs{$match}."1";
+					}
+					else {
+						$SNP_base = "S3";
+					}
+				
+					(!exists($found{$probes{$match}})) ? 
+						$found{$probes{$match}} = $SNP_base : 
+						$found{$probes{$match}} .= "#".$SNP_base;
+				} 	
+			}
+		}
+		close(FIN_BZ2_FILE);
 	}
-	close(FIN);
+}
+
+sub read_csfasta_files {
+	foreach my $csfasta_file(@input_files) {
+		open(FIN_CSFASTA_FILE, $csfasta_file) or die $!;
+		print STDERR "Processing $csfasta_file\n";
+		while (my $seq = <FIN_CSFASTA_FILE>) {
+			chomp($seq);
+			next unless ($seq !~ /^>/ and $seq !~ /^#/);
+		
+			for(my $i = 1;$i <= length($seq)-24; $i++) {
+				my $match = substr($seq, $i, 11)." ".substr($seq, $i+13, 11);
+				if(exists($probes{$match})) {
+					$SNP_color = substr($seq, $i+11,2);	
+					if($SNP_color eq $ref_allele_cs{$match}) {
+						$SNP_base = $ref_allele_bs{$match}."0";
+					}
+					elsif($SNP_color eq $alt_allele_cs{$match}) {
+						$SNP_base = $alt_allele_bs{$match}."1";
+					}
+					else {
+						$SNP_base = "S3";
+					}
+				
+					(!exists($found{$probes{$match}})) ? 
+						$found{$probes{$match}} = $SNP_base : 
+						$found{$probes{$match}} .= "#".$SNP_base;
+				} 	
+			}
+		}
+		close(FIN_CSFASTA_FILE);
+	}
+}
+
+if ($sequencing_type eq "illumina") {
+	read_bz2_files;
+}
+elsif ($sequencing_type eq "solid") {
+	read_csfasta_files;
+}
+else {
+	print STDERR "Invalid sequencing type: $sequencing_type\n";
 }
 
 print STDERR "Writing frequency data to $frequency_file\n";
@@ -274,7 +334,11 @@ foreach my $birdseed_file(@birdseed_files) {
 		($birdseed_values[0] = "chr".$birdseed_values[0]) unless ($birdseed_values[0] =~ /^chr(.*?)$/);
 		my $temp = $birdseed_values[0]."_".$birdseed_values[1];
 
-		if ($#birdseed_values < 3 and $birdseed_values[3] eq "00" and !exists($variant_freq{$temp})) {
+		if ($birdseed_values[3] eq "00" and !exists($variant_freq{$temp})) {
+			$unmatched_birdseed_lines++;
+			next;
+		}
+		if ($sequencing_type eq "solid" and (scalar @birdseed_values) < 4) {
 			$unmatched_birdseed_lines++;
 			next;
 		}
