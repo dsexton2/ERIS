@@ -13,7 +13,7 @@ my $command = "/users/p-qc/dev_concordance_pipeline/Concordance/Frequency/build_
 my $scheduler = Concordance::Common::Scheduler->new;
 $scheduler->command($command);
 $scheduler->job_name_prefix($job_name);
-$scheduler->cores(1);
-$scheduler->memory(1000);
+$scheduler->cores(2);
+$scheduler->memory(28000);
 $scheduler->priority("normal");
 $scheduler->execute;
