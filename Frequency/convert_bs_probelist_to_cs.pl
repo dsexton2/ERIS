@@ -12,7 +12,7 @@ my $cs_probe_file = $ARGV[1];
 open(FOUT, ">".$cs_probe_file) or die $!;
 open(FIN, $bs_probe_file) or die $!;
 
-my @indices_of_interest = qw(0 1 2 3 4 7 8 9 10 11);
+my @indices_of_interest = qw(0 1 2 3 4 5 6 7 8);
 
 my %bs_to_cs = ( 
 	'AA' => '0', 'AC' => '1', 'AG' => '2', 'AT' => '3',
