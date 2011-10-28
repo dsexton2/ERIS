@@ -190,10 +190,12 @@ sub read_csfasta_files {
 					else {
 						$SNP_base = "S3";
 					}
-				
-					(!exists($found{$probes{$match}})) ? 
-						$found{$probes{$match}} = $SNP_base : 
+					if( !exists($found{$probes{$match}})) {
+						$found{$probes{$match}} = $SNP_base;
+					}
+					else {
 						$found{$probes{$match}} .= "#".$SNP_base;
+					}
 				} 	
 			}
 		}
