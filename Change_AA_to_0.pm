@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#!/hgsc_software/perl/latest/bin/perl
 
 ##############################################################################
 #	Change_AA_to_0.pl
