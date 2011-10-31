@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#!/hgsc_software/perl/latest/bin/perl
 
 package Concordance::EGenotypingConcordanceMsub;
 
@@ -125,7 +125,7 @@ sub execute {
 		my $analysis_id = shift @line_vals;
 		my $csfasta_files = join(',', @line_vals);
 
-		my $command = "\"/users/p-qc/dev_concordance_pipeline/Concordance/Egenotyping/e-Genotyping_concordance.pl $analysis_id $csfasta_files ".$self->snp_array." ".$self->probe_list." ".$self->sequencing_type." \"\;";
+		my $command = "\"/users/p-qc/dev_concordance_pipeline/Concordance/Egenotyping/e-Genotyping_concordance.pl $analysis_id $csfasta_files ".$self->snp_array." ".$self->probe_list." ".$self->sequencing_type." \"";
 
 		my $scheduler = Concordance::Common::Scheduler->new;
 		$scheduler->command($command);
