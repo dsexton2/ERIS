@@ -47,6 +47,8 @@ sub new {
 	$self->{cores} = 0;
 	$self->{memory} = 0;
 	$self->{priority} = "normal";
+	$self->{dependency_list} = "";
+	$self->{job_id} = "";
 	bless $self;
 	return $self;
 }
@@ -121,6 +123,36 @@ sub priority {
 	return $self->{priority};
 }
 
+=head3 dependency_list
+
+ $scheduler->dependency_list($job_id);
+
+Gets and sets the dependency list for a job, which causes a job to delay execution
+until the jobs in its dependency list have completed.  When setting with this method, 
+job IDs are appended to the class member to form a comma-delimited list.
+
+=cut
+
+sub dependency_list {
+	my $self = shift;
+	if (@_) { $self->{dependency_list} = shift }
+	return $self->{dependency_list};
+}
+
+=head3 job_id
+
+ $scheduler->job_id(8675309);
+
+Gets and sets the job ID, which is obtained from the output of the msub submission.
+
+=cut
+
+sub job_id {
+	my $self = shift;
+	if (@_) { $self->{job_id} = shift }
+	return $self->{job_id};
+}
+
 =head3 __build_job_name__
 
  $self->__build_job_name__;
@@ -150,8 +182,11 @@ sub __build_command__ {
 		"-o ".$self->job_name_prefix.".o ".
 		"-e ".$self->job_name_prefix.".e ".
 		"-q ".$self->priority." ".
-		"-d ".getcwd()." ".
-		"-l nodes=1:ppn=".$self->cores.",mem=".$self->memory."mb";
+		"-d ".getcwd()." ";
+		if ($self->dependency_list ne "") {
+			$cmd .= "-l depend=afterok".$self->dependency_list;
+		}
+		$cmd .= "-l nodes=1:ppn=".$self->cores.",mem=".$self->memory."mb";
 	$debug_log->debug($cmd);
 	print $cmd."\n";
 	return $cmd;
@@ -161,13 +196,22 @@ sub __build_command__ {
 
  $scheduler->execute;
 
-Public method to submit the built command via msub.
+Public method to submit the built command via msub.  It will also record the job
+ID returned from msub, for use by the calling instance to build a dependency
+list.
 
 =cut
 
 sub execute {
 	$self = shift;
-	system($self->__build_command__);
+	#system($self->__build_command__);
+	my $cmd = $self->__build_command__;
+	my $output = `$cmd`;
+
+	if ($? == 0) {
+		$output =~ m/(\d+)/;
+		$self->job_id($1);
+	}
 }
 
 =head1 LICENSE
