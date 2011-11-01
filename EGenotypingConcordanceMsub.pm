@@ -22,6 +22,7 @@ Concordance::EGenotypingConcordanceMsub
  $ecm->egeno_list("/foo/bar.txt");
  $ecm->snp_array("foo");
  $ecm->probe_list("/foo/bar");
+ $ecm->sequencing_type("foo_sequencing_type");
  $ecm->execute;
 
 =head1 DESCRIPTION
@@ -46,6 +47,7 @@ sub new {
 	$self->{snp_array} = undef;
 	$self->{probe_list} = undef;
 	$self->{sequencing_type} = undef;
+	$self->{dependency_list} = undef;
 	bless($self);
 	return $self;
 }
@@ -106,6 +108,23 @@ sub sequencing_type {
 	return $self->{sequencing_type}; #[^\0]+
 }
 
+=head3 dependency_list
+
+ $scheduler->dependency_list($job_id);
+
+Gets and sets the dependency list for a job, which causes a job to delay execution
+until the jobs in its dependency list have completed.  When setting with this method, 
+job IDs are appended to the class member to form a colon-delimited list, which is 
+what msub expects.
+
+=cut
+
+sub dependency_list {
+	my $self = shift;
+	if (@_) { $self->{dependency_list} .= ":".shift }
+	return $self->{dependency_list};
+}
+
 =head3 execute
 
  $egeno_msub->execute;
@@ -134,6 +153,8 @@ sub execute {
 		$scheduler->memory(2000);
 		$scheduler->priority("normal");
 		$scheduler->execute;
+
+		$self->dependency_list($scheduler->job_id);
 	}
 	close(FIN);
 }
