@@ -62,7 +62,7 @@ Instantiates a new TUI object.
 
 sub new {
 	my $self = {};
-	$self->{CONFIG} = ();
+	$self->{CONFIG} = undef;
 	$self->{CONFIGFILE} = undef;
 	bless($self);
 	return $self;
@@ -78,8 +78,8 @@ Gets and sets the configuration hash, which contains general configuration value
 
 sub config {
 	my $self = shift;
-	if (@_) { %{ $self->{CONFIG} } = @_; }
-	return %{ $self->{CONFIG} };
+	if (@_) { $self->{CONFIG} = shift }
+	return $self->{CONFIG};
 }
 
 =head3 config_file
@@ -110,7 +110,7 @@ sub __get_params__ {
 	# as a hash of hashes, with the following structure:
 	# %hash = { class_name => %hash2 { param => validating_regex } }
 	my $self = shift;
-	my %config = $self->config;
+	my %config = %{ $self->config };
 	if (-e $config{"metadata_file"}) {
 		open(FIN, $config{"metadata_file"});
 		my @lines = <FIN>;
@@ -192,7 +192,7 @@ indicated by the C<config_file> class member.
 sub __write_config_file__ {
 	my $self = shift;
 	open(CONFIG_OUT, ">".$self->config_file) || die "Couldn't open file for writing configuration items: ".$self->config_file."\n";
-	my %config = $self->config;
+	my %config = %{ $self->config };
 	foreach my $key (sort (keys %config)) {
 		print CONFIG_OUT $key." = ".$config{$key}."\n";
 	}
@@ -288,7 +288,7 @@ sub set_instance_members {
 		else { $instance->$param($self->{CONFIG}{$param}) }
 	}
 	if ($instance->can("config")) { $instance->config($self->config) }
-	if ($instance->can("samples")) { $instance->samples(%samples) }
+	if ($instance->can("samples")) { $instance->samples(\%samples) }
 	$instance->execute;
 }
 
