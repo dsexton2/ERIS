@@ -21,6 +21,13 @@ if (scalar @ARGV != 6) {
 		"\n";
 }
 
+if (!Log::Log4perl->initialized()) {                                                                     
+        Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
+}
+my $debug_log = Log::Log4perl->get_logger("debugLogger"); 
+my $debug_to_screen = Log::Log4perl->get_logger("debugScreenLogger");
+my $error_log = Log::Log4perl->get_logger("errorLogger");
+
 use Carp;
 use Concordance::Birdseed2Csv;
 use Concordance::EGenotypingConcordanceMsub;
@@ -83,6 +90,7 @@ $ecm->execute;
 # get the job IDs of the jobs submitted; we'll want to wait until these complete
 # to kick of Birdseed2Csv
 my @dependency_list = split(/:/, $ecm->dependency_list);
+$debug_log->debug("dependency list: @dependency_list\n");
 if ($dependency_list[0] eq "") { splice(@dependency_list, 0, 1) }
 
 # wait until all jobs submitted are complete to proceed; absolutely terrible
@@ -110,6 +118,7 @@ $b2c->path(".");
 $b2c->output_csv_file($birdseed_out_csv);
 $b2c->project_name($project_name);
 $b2c->samples(\%samples);
+$b2c->execute;
 
 # Generate concordance results
 print "Running Judgement...\n";
@@ -119,3 +128,4 @@ $judgement->input_csv_path($birdseed_out_csv);
 $judgement->snp_array_dir($SNP_array_directory_path);
 $judgement->output_csv($$."_judgement.csv");
 $judgement->samples(\%samples);
+$judgement->judge;
