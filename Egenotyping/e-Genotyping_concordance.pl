@@ -99,21 +99,41 @@ sub add_colorspace_values {
 
 open(FIN, $probe_file);
 
-while(my $line = <FIN>) {
-	chomp($line);
-	# array index mapping: 0=>chromosome, 1=>mapLo, c3=>5', 4=>3'
-	# 5=>ref_allele, 6=>var_allele, 7=>ref_allele cs, 8=>var_allele cs
+#$sequencing_type
+if ($sequencing_type eq "solid") {
+	while(my $line = <FIN>) {
+		chomp($line);
+		# array index mapping: 0=>chromosome, 1=>mapLo, c3=>5', 4=>3'
+		# 5=>ref_allele, 6=>var_allele, 7=>ref_allele cs, 8=>var_allele cs
+	
+		my @probe_with_cs_vals = add_colorspace_values($line);
+		my $seq = $probe_with_cs_vals[3]." ".$probe_with_cs_vals[4];
+		$probes{$seq} = $probe_with_cs_vals[0]."_".$probe_with_cs_vals[1];
+		$ref_allele_cs{$seq}=$probe_with_cs_vals[7];
+		$alt_allele_cs{$seq}=$probe_with_cs_vals[8];
+		$ref_allele_bs{$seq}=$probe_with_cs_vals[5];
+		$alt_allele_bs{$seq}=$probe_with_cs_vals[6];
+		my $chr_pos_key = "chr".$probe_with_cs_vals[0]."_".$probe_with_cs_vals[1];
+		$heterozygous_freq{$chr_pos_key} = $probe_with_cs_vals[10];
+		$variant_freq{$chr_pos_key} = $probe_with_cs_vals[11];
+	}
+}
+elsif ($sequencing_type eq "illumina") {
+	while (my $line = <FIN>) {
+		chomp($line);
+		my @line_cols = split(/\t/, $line);
+		my $seq = $line_cols[3]." ".$line_cols[4];
+		$probes{$seq} = $line_cols[0]."_".$line_cols[1];
+		$ref_allele_bs{$seq} = $line_cols[5];
+		$alt_allele_bs{$seq} = $line_cols[6];
+		my $chr_pos_key = "chr".$line_cols[0]."_".$line_cols[1];
+		$heterozygous_freq{$chr_pos_key} = $line_cols[8];
+		$variant_freq{$chr_pos_key} = $line_cols[9];
 
-	my @probe_with_cs_vals = add_colorspace_values($line);
-	my $seq = $probe_with_cs_vals[3]." ".$probe_with_cs_vals[4];
-	$probes{$seq} = $probe_with_cs_vals[0]."_".$probe_with_cs_vals[1];
-	$ref_allele_cs{$seq}=$probe_with_cs_vals[7];
-	$alt_allele_cs{$seq}=$probe_with_cs_vals[8];
-	$ref_allele_bs{$seq}=$probe_with_cs_vals[5];
-	$alt_allele_bs{$seq}=$probe_with_cs_vals[6];
-	my $chr_pos_key = "chr".$probe_with_cs_vals[0]."_".$probe_with_cs_vals[1];
-	$heterozygous_freq{$chr_pos_key} = $probe_with_cs_vals[10];
-	$variant_freq{$chr_pos_key} = $probe_with_cs_vals[11];
+	}
+}
+else {
+	print STDERR "Invalid sequencing type: $sequencing_type\n";
 }
 
 print STDOUT "\n";
@@ -299,7 +319,7 @@ my $one_match_B=0;
 my $one_mismatch_A=0;
 my $one_mismatch_B=0;
 my $no_match=0;
-my @birdseed_files = glob("/stornext/snfs0/next-gen/SNP_array/".$SNP_array."/*.birdseed");
+my @birdseed_files = glob($SNP_array."/*.birdseed");
 
 if ($#birdseed_files == -1) { print "There are no birdseed files in $SNP_array\n" }
 
