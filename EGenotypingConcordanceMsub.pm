@@ -148,9 +148,9 @@ sub execute {
 
 		my $scheduler = Concordance::Common::Scheduler->new;
 		$scheduler->command($command);
-		$scheduler->job_name_prefix($job_counter++."\_eGeno\_concor.job");
+		$scheduler->job_name_prefix($job_counter++."_".$$."_".int(rand(5000))."_eGeno_concor.job");
 		$scheduler->cores(2);
-		$scheduler->memory(2000);
+		$scheduler->memory(20000);
 		$scheduler->priority("normal");
 		$scheduler->execute;
 
