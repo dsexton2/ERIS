@@ -42,7 +42,7 @@ Returns a new EGtIllPrep instance.
 sub new {
 	my $self = {};
 	$self->{output_txt_path} = undef;
-	$self->{samples} = {};
+	$self->{samples} = undef;
 	bless($self);
 	return $self;
 }
@@ -63,7 +63,7 @@ Gets and sets the Sample data structure.
 
 sub samples {
 	my $self = shift;
-	if (@_) { %{ $self->{samples} } = @_ }
+	if (@_) { $self->{samples} = shift }
 	return $self->{samples};
 }
 
