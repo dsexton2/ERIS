@@ -12,7 +12,6 @@ my $warn_log = Log::Log4perl->get_logger("warnLogger");
 
 sub new {
 	my $self = {};
-	$self->{config} = undef;
 	$self->{project_name} = undef;
 	$self->{input_csv_path} = undef;
 	$self->{snp_array_dir} = undef;
@@ -20,12 +19,6 @@ sub new {
 	$self->{samples} = undef;
 	bless($self);
 	return $self;
-}
-
-sub config {
-	my $self = shift;
-	if (@_) { $self->{config} = shift }
-	return $self->{config};
 }
 
 sub project_name {
