@@ -12,20 +12,20 @@ my $warn_log = Log::Log4perl->get_logger("warnLogger");
 
 sub new {
 	my $self = {};
-	$self->{config} = ();
+	$self->{config} = undef;
 	$self->{project_name} = undef;
 	$self->{input_csv_path} = undef;
 	$self->{snp_array_dir} = undef;
 	$self->{output_csv} = undef;
-	$self->{samples} = {};
+	$self->{samples} = undef;
 	bless($self);
 	return $self;
 }
 
 sub config {
 	my $self = shift;
-	if (@_) { %{ $self->{config} } = @_; }
-	return %{ $self->{config} };
+	if (@_) { $self->{config} = shift }
+	return $self->{config};
 }
 
 sub project_name {
@@ -54,8 +54,8 @@ sub output_csv {
 
 sub samples {
 	my $self = shift;
-	if (@_) { %{ $self->{samples} } = @_; }
-	return %{ $self->{samples} };
+	if (@_) { $self->{samples} = shift }
+	return $self->{samples};
 }
 
 sub execute {
@@ -107,7 +107,7 @@ sub judge {
 	$header =~ s/\t/,/g;
 	print FOUT $header."\n";
 	
-	my %samples = $self->samples;
+	my %samples = %{ $self->samples };
 	foreach my $sample_id (keys %samples) {
 		$sample_snp_pairs{$sample_id} = $samples{$sample_id}->snp_array;
 	}
@@ -136,7 +136,6 @@ sub judge {
 			my $snp = $sample_snp_pairs{$sampleid};
 			print "comparing $bestHitID to $snp\n";
 			if ($bestHitID !~ m/$snp/) {
-				my %samples = $self->samples;
 				if (scalar keys %samples != 0) {
 					if (!-e $self->snp_array_dir."/".$samples{$sampleid}->snp_array.".birdseed") {
 						$newline = "Missing SNP array file ".
