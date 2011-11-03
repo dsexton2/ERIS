@@ -12,9 +12,9 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{config} = {};
+	$self->{config} = undef;
 	$self->{csv_file} = undef;
-	$self->{samples} = {};
+	$self->{samples} = undef;
 	$self->{debug_flag} = 0;
 	bless($self);
 	return $self;
@@ -22,7 +22,7 @@ sub new {
 
 sub config {
 	my $self = shift;
-	if (@_) { %{ $self->{config} } = @_ }
+	if (@_) { $self->{config} = shift }
 	return $self->{config};
 }
 
@@ -34,7 +34,7 @@ sub csv_file {
 
 sub samples {
 	my $self = shift;
-	if (@_) { %{ $self->{samples} } = @_ }
+	if (@_) { $self->{samples} = shift }
 	return $self->{samples};
 }
 
@@ -49,17 +49,17 @@ sub __submit__ {
 	my $sample_id = shift;
 	my $input_bam_file = shift;
 	my $fh = shift;
-	my %config = $self->config;
+	my %config = %{ $self->config };
 
 	if ($input_bam_file !~ /.bam$/) {
 		print "Bad sample_id/input_bam_file pair: $sample_id\t$input_bam_file\n";
 		next;
 	}
 	(my $output_csfasta_file = $input_bam_file) =~ s/bam$/csfasta/g;
-	my $command = $config{"java"}." -Xmx2G -jar ".$config{"bam_2_csfasta_jar"}.
+	my $command = "\"".$config{"java"}." -Xmx2G -jar ".$config{"bam_2_csfasta_jar"}.
 		" $input_bam_file".
 		" >".
-		" $output_csfasta_file";
+		" $output_csfasta_file \"";
 	print $fh "$sample_id,$output_csfasta_file\n";
 
 	my $scheduler = Concordance::Common::Scheduler->new;
@@ -73,9 +73,9 @@ sub __submit__ {
 
 sub execute {
 	my $self = shift;
-	my %config = $self->config;
+	my %config = %{ $self->config };
 	open(CSV_FILE_CSFASTA, "> ".$self->csv_file.".csfasta.csv");
-	my %samples = $self->samples;
+	my %samples = %{ $self->samples };
 	if (scalar keys %samples != 0) { # Sample objects passed from EGenoSolid
 		foreach my $sample_id (keys %samples) {
 			my $input_bam_file = $samples{$sample_id}->result_path;
