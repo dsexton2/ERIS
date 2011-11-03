@@ -12,10 +12,10 @@ my $error_screen = Log::Log4perl->get_logger("errorScreenLogger");
 
 sub new {
 	my $self = {};
-	$self->{config} = ();
+	$self->{config} = undef;
 	$self->{output_path} = undef;
 	$self->{error_path} = undef;
-	$self->{samples} = {};
+	$self->{samples} = undef;
 	$self->{debug_flag} = 0;
 	bless($self);
 	return $self;
@@ -23,8 +23,8 @@ sub new {
 
 sub config {
 	my $self = shift;
-	if (@_) { %{ $self->{config} } = @_; }
-	return %{ $self->{config} };
+	if (@_) { $self->{config} = shift }
+	return $self->{config};
 }
 
 sub output_path {
@@ -41,8 +41,8 @@ sub error_path {
 
 sub samples {
 	my $self = shift;
-	if (@_) { %{ $self->{samples} } = @_; }
-	return %{ $self->{samples} };
+	if (@_) { $self->{samples} = shift }
+	return $self->{samples} ;
 }
 
 sub debug_flag {
@@ -70,7 +70,7 @@ sub check_perms {
 	# first check to make sure we have all the necessary file permissions
 	# for the directories in which we may need to create links etc
 	my $self = shift;
-	my %samples = $self->samples;
+	my %samples = %{ $self->samples };
 	my $all_clear = 1;
 	foreach my $sample_id (keys %samples) {
 		my $path = $samples{$sample_id}->result_path;
@@ -93,7 +93,7 @@ sub check_perms {
 
 sub execute {
 	my $self = shift;
-	my %samples = $self->samples;
+	my %samples = %{ $self->samples };
 	if (!$self->check_perms) {print "Fix perms issues\n"; exit; }
 	open (FOUT, ">".$self->output_path);
 	open (FERR, ">".$self->error_path);
