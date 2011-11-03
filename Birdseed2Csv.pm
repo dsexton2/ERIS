@@ -41,7 +41,7 @@ sub new {
 	$self->{path} = undef;
 	$self->{output_csv_file} = undef;
 	$self->{project_name} = undef;
-	$self->{samples} = {};
+	$self->{samples} = undef;
 	bless($self);
 	return $self;
 }
@@ -87,7 +87,7 @@ Gets and sets the Sample data structure.
 
 sub samples {
 	my $self = shift;
-	if (@_) { %{ $self->{samples} } = @_ }
+	if (@_) { $self->{samples} = shift }
 	return $self->{samples};
 }
 
@@ -155,9 +155,10 @@ sub __base_output__ {
 
 	# find the right Sample object by looking for the sample_id as all
 	# or part of the filename, then output run ID, sample ID
-	foreach my $sample_id (%{ $self->samples }) {
+	my %samples = %{ $self->samples };
+	foreach my $sample_id (keys %samples) {
 		if ($name =~ /$sample_id/) {
-			print FOUT ${ $self->samples }{$sample_id}->run_id.",".$sample_id.",";
+			print FOUT $samples{$sample_id}->run_id.",".$sample_id.",";
 		}
 	}
 
