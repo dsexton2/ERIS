@@ -11,7 +11,7 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{CONFIG} = ();
+	$self->{config} = undef;
 	$self->{path} = undef;
 	$self->{sample_name} = undef;
 	$self->{snp60_definition} = undef;
@@ -24,8 +24,8 @@ sub new {
 
 sub config {
 	my $self = shift;
-	if (@_) { %{ $self->{CONFIG} } = @_; }
-	return %{ $self->{CONFIG} };
+	if (@_) { $self->{config} = shift }
+	return $self->{config};
 }
 
 sub path {
@@ -79,19 +79,19 @@ sub _get_file_list_ {
 
 sub execute {
 	my $self = shift;
-	my %config = $self->config;
+	my %config = %{ $self->config };
 	my @files = $self->_get_file_list_(".birdseed.data.txt");
 	my $cmd = '';
 
 	foreach my $file (@files) {
 	# covert cancer birdseed data files to geli format
-		$cmd = $config{"java"}." -jar ".$config{"cancer_birdseed_snps_to_geli_jar"}.
+		$cmd = "\"".$config{"java"}." -jar ".$config{"cancer_birdseed_snps_to_geli_jar"}.
 		" I=$file".
 		" S=".$self->sample_name.
 		" SNP60_DEFINITION=".$self->snp60_definition_path.
 		" SD=".$self->sequence_dictionary_path.
 		" R=".$self->reference_path.
-		" O=$file.geli";
+		" O=$file.geli \"";
 		$file =~ /.*\/(.*)\.birdseed\.data\.txt$/;
 		my $scheduler = Concordance::Common::Scheduler->new;
 		$scheduler->command($cmd);
