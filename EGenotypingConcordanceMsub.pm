@@ -155,6 +155,7 @@ sub execute {
 		$scheduler->execute;
 
 		$self->dependency_list($scheduler->job_id);
+		sleep(5);
 	}
 	close(FIN);
 }
