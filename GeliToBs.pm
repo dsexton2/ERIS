@@ -11,7 +11,7 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
-	$self->{CONFIG} = ();
+	$self->{config} = undef;
 	$self->{path} = undef;
 	$self->{output_likelihoods} = undef;
 	bless($self);
@@ -20,8 +20,8 @@ sub new {
 
 sub config {
 	my $self = shift;
-	if (@_) { %{ $self->{CONFIG} } = @_; }
-	return %{ $self->{CONFIG} };
+	if (@_) { $self->{config} = shift }
+	return $self->{config};
 }
 
 sub path {
@@ -51,17 +51,17 @@ sub _get_file_list_ {
 
 sub execute {
 	my $self = shift;
-	my %config = $self->config;
+	my %config = %{ $self->config };
 	my @files = $self->_get_file_list_(".geli");
 	my $cmd = '';
 
 	foreach my $file (@files) {
 		# build bs file from geli
-		$cmd = $config{"java"}." -jar ".$config{"geli_to_text_extended_jar"}.
+		$cmd = "\"".$config{"java"}." -jar ".$config{"geli_to_text_extended_jar"}.
 			" OUTPUT_LIKELIHOODS=".$self->output_likelihoods.
 			" I=$file".
 			" >& ".
-			" $file.bs";
+			" $file.bs \"";
 		$file =~ /.*\/(.*)\.birdseed\.data\.txt\.geli$/;
 
 		my $scheduler = Concordance::Common::Scheduler->new;
