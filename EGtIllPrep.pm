@@ -47,6 +47,15 @@ sub new {
 	return $self;
 }
 
+=head3 output_txt_path
+
+ $egt_ill_prep->output_txt_path("/path/to/output/tsv.txt");
+
+This writes out a TSV of run IDs paired with their associated bz2 files, for 
+consumption by EGenotypingConcordanceMsub.
+
+=cut
+
 sub output_txt_path {
 	my $self = shift;
 	if (@_) { $self->{output_txt_path} = shift; }
@@ -55,7 +64,7 @@ sub output_txt_path {
 
 =head3 samples
 
- $egt_ill_prep->sampes(%samples_param);
+ $egt_ill_prep->samples(%samples_param);
 
 Gets and sets the Sample data structure.
 
@@ -67,88 +76,64 @@ sub samples {
 	return $self->{samples};
 }
 
-=head3 get_egeno_list_as_hash
+=head3 execute
 
- my %egeno_list = $self->get_egeno_list_as_hash;
+ $egt_ill_prep->execute;
 
-This method processes on the Sample data structure, returning a list containing
-pairs of Illumina run Ids mapped to their corresponding bz2 files.  If any of 
-the bz2 files are missing, the user will be alerted and the run Ids will be 
-noted for correction and will not be passed along to concordance anlysis for the
-current run.
+Replaces the result_path in each sample object, which is currently the directory
+containing the bz2 files, with a comma-delimited list of these same bz2 files.  
+If there are not exactly two bz2 files, or if we lack read permissions, then 
+remove that sample from the Samples data structure, note it, and continue with
+the rest.
 
 =cut
 
-sub get_egeno_list_as_hash {
-	my $self = shift;
-	my %samples = %{ $self->samples };
-	my %egeno_list;
-
-	foreach my $sample_id (keys %samples) {
-		my $name = $sample_id;
-		my $path = $samples{$sample_id}->result_path;
-		chomp($path);
-	
-		my @dirs = split(/\//,$path);
-		my $instrument = $dirs[6];	
-		my @fcra = split(/_/,$dirs[7]);
-		
-		my $flowcell = $fcra[3];
-	
-		my $se = "";
-		my $analysis_number = 0;
-		if ($path =~ /Demultiplexed/) {
-			my $barcode = $dirs[12];
-			$dirs[13] =~ /(\d+)$/;
-			$analysis_number = $1; 
-			if ($analysis_number eq '') { $analysis_number = 1; }    
-			$se = $flowcell."_".$barcode."_".$analysis_number;
-		}
-		else {
-			if ($dirs[11] =~ /GERALD/) {
-				my @grld = split(/\./,$dirs[11]);
-				$analysis_number = $grld[1];
-			}
-			elsif ($dirs[9] =~ /lane(\d+)/) {
-				$analysis_number = $1;
-			}
-			if ($analysis_number eq '') { $analysis_number = 1; }
-			$se = $flowcell."_".$analysis_number;
-		}
-	
-		my @bz2_files = glob($path."/*sequence.txt.bz2");
-
-		$egeno_list{$name."_".$se} = join(',', @bz2_files);
-
-		# scalar @files = 2 should be the case
-		if (scalar @bz2_files != 2) {
-			# delete this key from the hash, print out for later processing
-			delete $egeno_list{$name."_".$se};
-			$debug_log->debug("Did not find the two required bz2 files for sample ID ".
-				$sample_id." in directory ".$samples{$sample_id}->result_path."\n");
-			$debug_to_screen->debug("Did not find the two required bz2 files for sample ID ".
-				$sample_id." in directory ".$samples{$sample_id}->result_path."\n");
-		}
-	
-	}
-	return %egeno_list;
-}
-
 sub execute {
 	my $self = shift;
+	my %samples = %{ $self->samples };
 
-	my %egeno_list = $self->get_egeno_list_as_hash;
-
+	foreach my $sample (values %samples) {
+		my @bz2_files = glob($sample->result_path."/*sequence.txt.bz2");
+		# if there aren't exactly two bz2 files, or if we lack read permissions
+		# for either file, note it and remove the Samples object
+		if (scalar @bz2_files != 2) {
+			# delete this key from the hash, print out for later processing
+			$debug_log->debug("Did not find the two required bz2 files for ".$sample->run_id."\n");
+			$debug_to_screen->debug("Did not find the two required bz2 files for ".$sample->run_id."\n");
+			delete $samples{$sample->run_id};
+		}
+		elsif (!-r $bz2_files[0]) {
+			$debug_log->debug("No read permissions on ".$bz2_files[0]."\n");
+			$debug_to_screen->debug("No read permissions on ".$bz2_files[0]."\n");
+			delete $samples{$sample->run_id};
+		}
+		elsif (!-r $bz2_files[1]) {
+			$debug_log->debug("No read permissions on ".$bz2_files[1]."\n");
+			$debug_to_screen->debug("No read permissions on ".$bz2_files[1]."\n");
+			delete $samples{$sample->run_id};
+		}
+		else {
+			$sample->result_path(join(",", @bz2_files));
+		}
+	}
+	# print out result TSV for consumption by EGenotypingConcordanceMsub
 	open (OUTFILE, "> ".$self->output_txt_path);
-	print "egenoList: ".(scalar keys %egeno_list)."\n";
-	foreach my $sample_id (keys %egeno_list) {
-		my @files = $egeno_list{$sample_id};
-		print OUTFILE $sample_id;
-		foreach my $file (@files) { print OUTFILE "\t".$file }
+	foreach my $sample (values %samples) {
+		print OUTFILE $sample->run_id;
+		foreach my $file (split(/,/, $sample->result_path)) { print OUTFILE "\t".$file }
 		print OUTFILE "\n";
 	}
 	close (OUTFILE);
-
 }
+
+=head1 LICENSE
+
+GPLv3.
+
+=head1 AUTHOR
+
+John McAdams - L<mailto:mcadams@bcm.edu>
+
+=cut
 
 1;
