@@ -75,13 +75,12 @@ sub populate_sample_info_hash {
 		my $orig_sample_id = $2;
 		my $result_path = $3;
 		my $snp_array = $4;
-		$sample_id =~ s/^HCC-//;
 		if ($run_id ne "run_name") {
-			$samples{$sample_id} = Concordance::Sample->new;
-			$samples{$sample_id}->run_id($run_id);
-			$samples{$sample_id}->snp_array($snp_array);
-			$samples{$sample_id}->sample_id($sample_id);
-			$samples{$sample_id}->result_path($result_path);
+			$samples{$run_id} = Concordance::Sample->new;
+			$samples{$run_id}->run_id($run_id);
+			$samples{$run_id}->snp_array($snp_array);
+			$samples{$run_id}->sample_id($sample_id);
+			$samples{$run_id}->result_path($result_path);
 		}
 	    $result =~ s/$run_id,$orig_sample_id,$result_path,$snp_array\n//; # remove the line; finished processing it
 	}
