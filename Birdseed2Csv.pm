@@ -161,10 +161,10 @@ sub __base_output__ {
 	# find the right Sample object by looking for the sample_id as all
 	# or part of the SNP array name, then output run ID, sample ID
 	my %samples = %{ $self->samples };
-	foreach my $sample_id (keys %samples) {
-		if ($file_name =~ /$sample_id/) {
-			print FOUT $samples{$sample_id}->run_id.",".$sample_id.",";
-			$SNP_array_name = $samples{$sample_id}->snp_array;
+	foreach my $sample (values %samples) {
+		if ($file_name =~ /$sample->run_id/) {
+			print FOUT $sample->run_id.",".$sample->sample_id.",";
+			$SNP_array_name = $sample->snp_array;
 		}
 	}
 
@@ -225,7 +225,7 @@ sub execute {
 
 =head1 LICENSE
 
-This script is the property of Baylor College of Medecine.
+GPLv3.
 
 =head1 AUTHOR
 
