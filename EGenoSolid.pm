@@ -72,8 +72,8 @@ sub check_perms {
 	my $self = shift;
 	my %samples = %{ $self->samples };
 	my $all_clear = 1;
-	foreach my $sample_id (keys %samples) {
-		my $path = $samples{$sample_id}->result_path;
+	foreach my $sample (values %samples) {
+		my $path = $sample->result_path;
 		if ($path =~ /\/output\//) {
 			$path =~ s/(.*)(output\/.*)/$1/;
 		}
@@ -83,8 +83,8 @@ sub check_perms {
 		}
 		if (!-w $path) {
 			# make a note of each path for which perms need to be corrected
-			$error_log->error("No write perms on dir $path for run ID ".$samples{$sample_id}->run_id."\n");
-			$error_screen->error("No write perms on dir $path for run ID ".$samples{$sample_id}->run_id."\n");
+			$error_log->error("No write perms on dir $path for run ID ".$sample->run_id."\n");
+			$error_screen->error("No write perms on dir $path for run ID ".$sample->run_id."\n");
 			$all_clear = 0;
 		}
 	}
@@ -97,18 +97,10 @@ sub execute {
 	if (!$self->check_perms) {print "Fix perms issues\n"; exit; }
 	open (FOUT, ">".$self->output_path);
 	open (FERR, ">".$self->error_path);
-	foreach my $sample_id (keys %samples) {
-		#chomp;
-		#print "Processing $_\n";
-		print "Processing $sample_id\n";
-		#my @csv_list = split(/,/, $_);
-		#my $sample_id = undef;
-		my $path = $samples{$sample_id}->result_path;
+	foreach my $sample (values %samples) {
+		print "Processing ".$sample->run_id."\n";
+		my $path = $sample->result_path;
 		my $raw = "";
-		#$sample_id = $csv_list[0];
-		#$path = $csv_list[1];
-		# since the webservice gives back the path to the BAM, I'll chop off enough
-		# to use the logic that was already here
 		if ($path =~ /\/output\//) {
 			$path =~ s/(.*)(output\/.*)/$1/;
 		}
@@ -118,8 +110,7 @@ sub execute {
 		}
 		my $list = "";
 		my @files = undef;
-		my $se = $samples{$sample_id}->run_id;
-		my $full_name = $sample_id;
+		my $se = $sample->run_id;
 		if ((@files = glob($path."/input/*.csfasta")) || (@files = glob($path."/*.csfasta"))) {
 			#egeno_solid.sh
 			#$path =~ /.*\/(.*)$/;
@@ -140,7 +131,7 @@ sub execute {
 					my @bam_files = undef;
 					if ((@bam_files = glob($path."/output/*.bam")) || (@bam_files = glob($path."/*.bam"))) {
 						foreach my $bam_file (@bam_files) {
-							print FERR $sample_id.",".$bam_file."\n";
+							print FERR $sample->run_id.",".$bam_file."\n";
 							(my $link = $bam_file) =~ s/bam$/csfasta/;
 							print STDOUT "Linking $file to $link\n";
 							if (!-e $link) { touch($link) }
@@ -171,7 +162,7 @@ sub execute {
 					next;
 				}
 			}
-			if ($list ne "") { print FOUT $full_name." ".$list."\n" }
+			if ($list ne "") { print FOUT $sample->run_id." ".$list."\n" }
 		}
 		else {
 			# no csfasta files
@@ -182,7 +173,7 @@ sub execute {
 			my @bam_files = undef;
 			if ((@bam_files = glob($path."/output/*.bam")) || (@bam_files = glob($path."/*.bam"))) {
 				foreach my $bam_file (@bam_files) {
-					print FERR $sample_id.",".$bam_file."\n";
+					print FERR $sample->run_id.",".$bam_file."\n";
 					(my $link = $bam_file) =~ s/bam$/csfasta/;
 					my $file = $bam_file.".csfasta";
 					$file =~ s/output\///;
@@ -199,28 +190,8 @@ sub execute {
 				}
 			}
 			else { print "No .bam files in $path/output\n" }
-			if ($list ne "") { print FOUT $full_name." ".$list."\n" }
+			if ($list ne "") { print FOUT $sample->run_id." ".$list."\n" }
 		}
-		
-		#elsif (@csv_list == 3) {
-		#	#egeno_solid_2.sh
-		#	$sample_id = $csv_list[0];
-		#	my $se = $csv_list[1];
-		#	$path = $csv_list[2];
-		#	my $full_name = $sample_id." ".$se;
-		#	foreach my $file (__get_file_list__($path, "*")) {
-		#		if (stat($file) == 0) { print "fail on $file\n" }
-
-		#		if ($file =~ m/results/ and $file =~ m/csfasta/) {
-		#			$raw .= $file." ";
-		#		}
-		#	}
-		#	$raw =~ s/\s+$//g;
-		#	print FOUT $full_name." ".$path."\n";
-		#}
-		#else {
-		#	print "Unrecognized file format\n";
-		#}
 	}
 	close(FERR);
 	close FOUT;
