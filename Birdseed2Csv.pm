@@ -162,7 +162,8 @@ sub __base_output__ {
 	# or part of the SNP array name, then output run ID, sample ID
 	my %samples = %{ $self->samples };
 	foreach my $sample (values %samples) {
-		if ($file_name =~ /$sample->run_id/) {
+		my $run_id = $sample->run_id;
+		if ($file_name =~ /$run_id/) {
 			print FOUT $sample->run_id.",".$sample->sample_id.",";
 			$SNP_array_name = $sample->snp_array;
 		}
