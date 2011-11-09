@@ -63,6 +63,11 @@ sub get_rules {
 	my $rules_content = do { local $/; <FIN> };
 	close(FIN);
 	my $project_name = $self->project_name; # so I don't have to do interpolation work-arounds
+	if ($rules_content !~ m/$project_name/) {
+		print STDOUT "Warning: No rule for $project_name in judgement_rules.  Using default headers...\n";
+		$warn_log->warn("Warning: No rule for $project_name in judgement_rules.  Using default headers...\n");
+		$project_name = "default";
+	}
 	my %rules = ();
 	if ($rules_content =~ /project=($project_name)\nrunid=(.*)\nsampleid=(.*)\naverage=(.*)\nslf=(.*)\nbestHitID=(.*)\nbestHitValue=(.*)\nheader="(.*)"\n/) {
 		$rules{"runid"} = $2;
