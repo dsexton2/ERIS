@@ -64,13 +64,14 @@ sub get_rules {
 	close(FIN);
 	my $project_name = $self->project_name; # so I don't have to do interpolation work-arounds
 	my %rules = ();
-	if ($rules_content =~ /project=($project_name)\nsampleid=(.*)\naverage=(.*)\nslf=(.*)\nbestHitID=(.*)\nbestHitValue=(.*)\nheader="(.*)"\n/) {
-		$rules{"sampleid"} = $2;
-		$rules{"average"} = $3;
-		$rules{"slf"} = $4;
-		$rules{"bestHitID"} = $5;
-		$rules{"bestHitValue"} = $6;
-		$rules{"header"} = $7;
+	if ($rules_content =~ /project=($project_name)\nrunid=(.*)\nsampleid=(.*)\naverage=(.*)\nslf=(.*)\nbestHitID=(.*)\nbestHitValue=(.*)\nheader="(.*)"\n/) {
+		$rules{"runid"} = $2;
+		$rules{"sampleid"} = $3;
+		$rules{"average"} = $4;
+		$rules{"slf"} = $5;
+		$rules{"bestHitID"} = $6;
+		$rules{"bestHitValue"} = $7;
+		$rules{"header"} = $8;
 	}
 	return %rules;
 }
@@ -101,8 +102,8 @@ sub judge {
 	print FOUT $header."\n";
 	
 	my %samples = %{ $self->samples };
-	foreach my $sample_id (keys %samples) {
-		$sample_snp_pairs{$sample_id} = $samples{$sample_id}->snp_array;
+	foreach my $sample (values %samples) {
+		$sample_snp_pairs{$sample->run_id} = $sample->snp_array;
 	}
 	open(FINPUT, $self->input_csv_path) or die $!;
 	while (my $line = <FINPUT>) {
@@ -110,6 +111,8 @@ sub judge {
 		$newline = "";
 		my @line_cols = undef;
 		@line_cols = split(/,/, $line);
+		# this is really run_id now
+		my $runid = $line_cols[$rules{"runid"}];
 		my $sampleid = $line_cols[$rules{"sampleid"}];
 		my $average = $line_cols[$rules{"average"}];
 		my $slf = $line_cols[$rules{"slf"}];
@@ -126,22 +129,18 @@ sub judge {
 			$insen += 1;
 		}
 		else {
-			my $snp = $sample_snp_pairs{$sampleid};
-			print "comparing $bestHitID to $snp\n";
+			my $snp = $sample_snp_pairs{$runid};
+			print "comparing $bestHitID to $snp with self concordance of $slf and bestHitValue $bestHitValue\n";
 			if ($bestHitID !~ m/$snp/) {
-				if (scalar keys %samples != 0) {
-					if (!-e $self->snp_array_dir."/".$samples{$sampleid}->snp_array.".birdseed") {
-						$newline = "Missing SNP array file ".
-							$self->snp_array_dir."/".$samples{$sampleid}->snp_array.".birdseed ".
-							" for sample ID ".$sampleid;
-						$missing += 1;
-						$line =~ s/$slf//;
-						#TODO sampleid, avg, NO SELF, best
-						$newline .= ",".$line;
-					}
-				}
+				$newline = "Missing SNP array file ".
+					$self->snp_array_dir."/".$samples{$runid}->snp_array.".birdseed ".
+					" for run ID ".$runid;
+				$missing += 1;
+				$line =~ s/$slf//;
+				#TODO sampleid, avg, NO SELF, best
+				$newline .= ",".$line;
 			}
-			elsif ($slf > 0.9 and $slf > $bestHitValue) {
+			elsif ($slf > 0.9 and $slf >= $bestHitValue) {
 				$newline = "Pass,$line";
 				$pass += 1;
 			}
