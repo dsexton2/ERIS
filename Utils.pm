@@ -7,6 +7,7 @@ use Log::Log4perl;
 use Concordance::Sample;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
+my $error_screen = Log::Log4perl->get_logger("errorScreenLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
 my $warn_log = Log::Log4perl->get_logger("warnLogger");
 
@@ -84,7 +85,39 @@ sub populate_sample_info_hash {
 		}
 	    $result =~ s/$run_id,$orig_sample_id,$result_path,$snp_array\n//; # remove the line; finished processing it
 	}
-	return %samples;
+	return %{ (validate_samples_container(\%samples)) };
+}
+
+sub validate_samples_container {
+	my %samples = %{ (shift) };
+
+	foreach my $sample (values %samples) {
+		if ($sample->sample_id eq "null" or $sample->sample_id eq "") {
+			print_to_error_log_and_screen("Bad sample_id ".$sample->sample_id." for run ID ".
+				$sample->run_id.", removing from Samples container ...");
+			delete $samples{$sample->run_id};
+			next;
+		}
+		if ($sample->snp_array eq "null" or $sample->snp_array eq "") {
+			print_to_error_log_and_screen("Bad snp_array ".$sample->snp_array." for run ID ".
+				$sample->run_id.", removing from Samples container ...");
+			delete $samples{$sample->run_id};
+			next;
+		}
+		if ($sample->result_path eq "null" or $sample->result_path eq "") {
+			print_to_error_log_and_screen("Bad result_path ".$sample->result_path." for run ID ".
+				$sample->run_id.", removing from Samples container ...");
+			delete $samples{$sample->run_id};
+			next;
+		}	
+	}
+	return \%samples;
+}
+
+sub print_to_error_log_and_screen {
+	my $message = shift;
+	$error_screen->error($message."\n");
+	print STDERR $message."\n";
 }
 
 =head1 LICENSE
