@@ -136,7 +136,7 @@ sub judge {
 		else {
 			my $snp = $sample_snp_pairs{$runid};
 			print "comparing $bestHitID to $snp with self concordance of $slf and bestHitValue $bestHitValue\n";
-			if ($bestHitID !~ m/$snp/) {
+			if ($line !~ m/$snp/) {
 				$newline = "Missing SNP array file ".
 					$self->snp_array_dir."/".$samples{$runid}->snp_array.".birdseed ".
 					" for run ID ".$runid;
