@@ -124,6 +124,11 @@ sub judge {
 		my $bestHitID = $line_cols[$rules{"bestHitID"}]; # aka snp_array_name
 		my $bestHitValue = $line_cols[$rules{"bestHitValue"}];
 
+		if (!exists($samples{$runid})) {
+			print STDERR "$runid found in Birdseed2Csv output, but not in Samples container; continuing ...\n";
+			next;
+		}
+
 		# if 0.5 > average > 0.75, we're not checking
 		if ($average < 0.5) {
 			$newline = "Low Average Concordance,$line";
