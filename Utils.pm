@@ -88,6 +88,14 @@ sub populate_sample_info_hash {
 	return %{ (validate_samples_container(\%samples)) };
 }
 
+=head3 validate_samples_container
+
+ $validate_samples_container(\%samples);
+
+A private method that checks the sample_id, snp_array, and result_path fields to see of the LIMS web query returns any of them as null.  If that is the case, log the information and remove that sample from the container.
+
+=cut
+
 sub validate_samples_container {
 	my %samples = %{ (shift) };
 
