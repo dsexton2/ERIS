@@ -3,20 +3,27 @@
 use warnings;
 use strict;
 use diagnostics;
+#use Data::Dumper;
+use Carp;
 
-if (scalar @ARGV != 5) { die "usage: perl e-Genotyping_concordance.pl analysis_id /comma-delimited/paths/to/csfasta SNP_array /path/to/probelist <sequencing-type[solid|illumina]>\n" }
+if (scalar @ARGV != 6) { die "usage: perl e-Genotyping_concordance.pl analysis_id /comma-delimited/paths/to/csfasta SNP_array /path/to/probelist <sequencing-type[solid|illumina]> self_SNP_array_name\n" }
+
+print "e-Genotyping_concordance.pl called with the following argument list: ".join(',', @ARGV)."\n";
 
 my $analysis_id = $ARGV[0];
 my @input_files = split(/,/, $ARGV[1]);
 my $SNP_array=$ARGV[2];
 my $probe_file = $ARGV[3];
 my $sequencing_type = $ARGV[4];
+my $self_SNP_array_name = $ARGV[5];
 
 
 my $con_result = $analysis_id.".birdseed.txt";
 my $frequency_file = $analysis_id.".fre";
+my $data_dump_file = $analysis_id.".data_dump.txt";
 
 my %probes;
+my %probes_with_homozygous_variant_calls;
 my %ref_allele_cs;
 my %alt_allele_cs;
 my %ref_allele_bs;
@@ -29,6 +36,10 @@ my $snp_arraycnt; # total number of lines in SNP array file
 my $arr_seq; # number of SNP array lines overlapping with sequence
 my $match_tot_num; # number of SNP IDs considered for matching IDs
 my $unmatched_birdseed_lines;
+
+# variables for contamination calculation
+my $contamination_count = 0;
+my $total_alleles_matched = 0;
 
 my %color_space = (
 	'A0' => 'A', 'A1' => 'C', 'A2' => 'G', 'A3' => 'T', 
@@ -54,6 +65,22 @@ my @chr_array = (
 	'18', '19', '20', '21', '22', 'X', 'Y', 'MT'
 );
 
+#open(FOUT_DATADUMP, ">".$data_dump_file) or croak $!;
+
+sub colorspace_to_basespace {
+	my $cs = shift;
+    $cs =~ tr/ACGTacgt/01230123/;
+    for(my $i=1;$i<length($cs);$i++) {
+        my $pair = substr($cs, $i-1, 2);
+        if($pair =~ /[0123][0123]/){
+          substr($cs, $i, 1) = 
+              int(substr($cs, $i-1, 1)) ^ int(substr($cs, $i, 1));
+        }
+    }
+    $cs =~ tr/0123/ACGT/;
+    return $cs;
+}
+
 sub sequence_to_colorspace {
 	my @sequence_space = split(//, shift);
 	my @color_space = ();
@@ -66,7 +93,6 @@ sub sequence_to_colorspace {
 		}
 	}
 	return join('', @color_space);
-
 }
 
 sub add_colorspace_values {
@@ -97,15 +123,32 @@ sub add_colorspace_values {
 	return @cs_vals;
 }
 
-open(FIN, $probe_file);
+# read in the self_named SNP array up front for contamination check purposes
+if (!-e $SNP_array."/".$self_SNP_array_name.".birdseed") {
+	print "Warning: Can't find self SNP array ".$SNP_array."/".$self_SNP_array_name.".birdseed"."\n";
+}
+else {
+	open(FIN_SELF_SNP, $SNP_array."/".$self_SNP_array_name.".birdseed");
+	while (my $line = <FIN_SELF_SNP>) {
+		# line = 2	176194391	A	AA
+		my @line_cols = split(/\t/, $line);
+		my @genotype_call = split(//, $line_cols[3]);
+		if ((($line_cols[2] ne $genotype_call[0]) and ($line_cols[2] ne $genotype_call[1]))
+			and ($genotype_call[0] eq $genotype_call[1])) {
+			$probes_with_homozygous_variant_calls{$line_cols[0]."_".$line_cols[1]} = $genotype_call[0];
+		}
+	}
+	close(FIN_SELF_SNP);
+	print "probes_with_homozygous_variant_calls count: ".(scalar keys %probes_with_homozygous_variant_calls)."\n";
+}
+#print FOUT_DATADUMP "probes_with_homozygous_variant_calls\n".Dumper(\%probes_with_homozygous_variant_calls);
 
-#$sequencing_type
+open(FIN_PROBEFILE, $probe_file);
 if ($sequencing_type eq "solid") {
-	while(my $line = <FIN>) {
+	while(my $line = <FIN_PROBEFILE>) {
 		chomp($line);
 		# array index mapping: 0=>chromosome, 1=>mapLo, c3=>5', 4=>3'
 		# 5=>ref_allele, 6=>var_allele, 7=>ref_allele cs, 8=>var_allele cs
-	
 		my @probe_with_cs_vals = add_colorspace_values($line);
 		my $seq = $probe_with_cs_vals[3]." ".$probe_with_cs_vals[4];
 		$probes{$seq} = $probe_with_cs_vals[0]."_".$probe_with_cs_vals[1];
@@ -119,7 +162,7 @@ if ($sequencing_type eq "solid") {
 	}
 }
 elsif ($sequencing_type eq "illumina") {
-	while (my $line = <FIN>) {
+	while (my $line = <FIN_PROBEFILE>) {
 		chomp($line);
 		my @line_cols = split(/\t/, $line);
 		my $seq = $line_cols[3]." ".$line_cols[4];
@@ -129,15 +172,15 @@ elsif ($sequencing_type eq "illumina") {
 		my $chr_pos_key = "chr".$line_cols[0]."_".$line_cols[1];
 		$heterozygous_freq{$chr_pos_key} = $line_cols[8];
 		$variant_freq{$chr_pos_key} = $line_cols[9];
-
 	}
 }
 else {
 	print STDERR "Invalid sequencing type: $sequencing_type\n";
 }
+close(FIN_PROBEFILE);
 
-print STDOUT "\n";
-close(FIN);
+#print FOUT_DATADUMP "\nprobes\n".Dumper(\%probes);
+#print FOUT_DATADUMP "\nalt_allele_cs\n".Dumper(\%alt_allele_bs);
 
 my $SNP_color="";
 my %found;
@@ -178,10 +221,19 @@ sub read_bz2_files {
 					else {
 						$SNP_base = "S3";
 					}
-				
-					(!exists($found{$probes{$match}})) ? 
-						$found{$probes{$match}} = $SNP_base : 
+					if( !exists($found{$probes{$match}})) {
+						$found{$probes{$match}} = $SNP_base;
+					}
+					else {
 						$found{$probes{$match}} .= "#".$SNP_base;
+					}
+
+					if (exists($probes_with_homozygous_variant_calls{$probes{$match}})) {
+						if ($SNP_color eq $probes_with_homozygous_variant_calls{$probes{$match}}) {
+							$contamination_count++;
+						}
+						$total_alleles_matched++;
+					}
 				} 	
 			}
 		}
@@ -215,6 +267,16 @@ sub read_csfasta_files {
 					}
 					else {
 						$found{$probes{$match}} .= "#".$SNP_base;
+					}
+					if (exists($probes_with_homozygous_variant_calls{$probes{$match}})) {
+						print STDOUT "checking ".$probes{$match}.", pwhvc has ".$probes_with_homozygous_variant_calls{$probes{$match}}." while aab has ".$alt_allele_bs{$match};
+						my @snp_base_vals = split(//, $SNP_base);
+						if ($snp_base_vals[0] ne $probes_with_homozygous_variant_calls{$probes{$match}}) {
+							$contamination_count++;
+							print " ...  contamination count now at $contamination_count";
+						}
+						print "\n";
+						$total_alleles_matched++;
 					}
 				} 	
 			}
@@ -456,14 +518,21 @@ foreach my $birdseed_file(@birdseed_files) {
 			$no_match = round($no_match * 10000.0) * 0.0001;
 			$co = round($co * 10000.0) * 0.0001;
 			#print FOUT "$3\t$exact_match\t$exact_match_AB\t$exact_match_BB\t$one_match\t$one_match_A\t$one_match_B\t$no_match\t$co\n";
-			print FOUT "$3\t$exact_match\t$exact_match_AB\t$exact_match_BB\t$one_match\t$one_match_A\t$one_match_B\t$no_match\t$co\t$snp_arraycnt\t$fre_size\t$arr_seq\t$match_tot_num\n";
+			print FOUT "$3\t$exact_match\t$exact_match_AB\t$exact_match_BB\t$one_match\t$one_match_A\t$one_match_B\t$no_match\t$co\t$snp_arraycnt\t$fre_size\t$arr_seq\t$match_tot_num";
+			if ($birdseed_file =~ m/$self_SNP_array_name/) {
+				print FOUT "\t".(($contamination_count / $total_alleles_matched) * 100);
+			}
+			print FOUT "\n";
 	}
 	else {
 			print FOUT "$birdseed_file\n";
+			print $contamination_count."\t".$total_alleles_matched."\n";
 	}
 	print STDOUT "\n";
 	print STDOUT "$birdseed_file:\t$snp_arraycnt\t$arr_seq\t$match_tot_num\t$unmatched_birdseed_lines\n";
 }
+
+#close(FOUT_DATADUMP) or carp $!;
 
 sub round {
 	my($number) = shift;
