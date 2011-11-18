@@ -27,6 +27,7 @@ if (!Log::Log4perl->initialized()) {
 my $debug_log = Log::Log4perl->get_logger("debugLogger"); 
 my $debug_to_screen = Log::Log4perl->get_logger("debugScreenLogger");
 my $error_log = Log::Log4perl->get_logger("errorLogger");
+my $warn_log = Log::Log4perl->get_logger("warnLogger");
 
 use Carp;
 use Concordance::Birdseed2Csv;
@@ -73,25 +74,31 @@ my %config = new Config::General($config_file_path)->getall;
 # this may call Bam2csfasta if errors are present
 my $egs = Concordance::EGenoSolid->new;
 $egs->config(\%config);
-$egs->output_path($egenoSolid_result_path);
-$egs->error_path($$."_".int(rand(1000))."_egenoSolid_errors.csv");
 $egs->samples(\%samples);
 $egs->execute;
 
 # Submit concordance analysis jobs to MOAB
 print "Running EGenotypingConcordanceMsub...\n";
 my $ecm = Concordance::EGenotypingConcordanceMsub->new;
-$ecm->egeno_list($egenoSolid_result_path);
-$ecm->snp_array($SNP_array_directory_path);
+$ecm->config(\%config);
+$ecm->snp_array_dir($SNP_array_directory_path);
 $ecm->probe_list($probelist_path);
 $ecm->sequencing_type("solid");
+$ecm->samples($egs->samples);
 $ecm->execute;
 
 # get the job IDs of the jobs submitted; we'll want to wait until these complete
 # to kick of Birdseed2Csv
-my @dependency_list = split(/:/, $ecm->dependency_list);
-$debug_log->debug("dependency list: @dependency_list\n");
-if ($dependency_list[0] eq "") { splice(@dependency_list, 0, 1) }
+my @dependency_list;
+if (defined($ecm->dependency_list)) {
+	@dependency_list = split(/:/, $ecm->dependency_list);
+	$debug_log->debug("dependency list: @dependency_list\n");
+	if ($dependency_list[0] eq "") { splice(@dependency_list, 0, 1) }
+}
+else {
+	print "Warning: dependency_list undefined.  It's possible that no jobs were submitted\n";
+	$warn_log->warn("Warning: dependency_list undefined.  It's possible that no jobs were submitted\n");
+}
 
 # wait until all jobs submitted are complete to proceed; absolutely terrible
 # hack to get this done, I am ashamed; but this was less work/easier to figure
