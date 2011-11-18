@@ -19,10 +19,11 @@ Concordance::EGenotypingConcordanceMsub
 
  use Concordance::EGenotypingConcordanceMsub;
  my $ecm = Concordance::EGenotypingConcordanceMsub->new;
- $ecm->egeno_list("/foo/bar.txt");
- $ecm->snp_array("foo");
+ $ecm->snp_array_dir("/foo/bar");
  $ecm->probe_list("/foo/bar");
  $ecm->sequencing_type("foo_sequencing_type");
+ $ecm->samples(\%samples);
+ $ecm->config(\%config);
  $ecm->execute;
 
 =head1 DESCRIPTION
@@ -43,41 +44,28 @@ Creates a new Concordance::EGenotyping instance.
 
 sub new {
 	my $self = {};
-	$self->{egeno_list} = undef;
-	$self->{snp_array} = undef;
+	$self->{snp_array_dir} = undef;
 	$self->{probe_list} = undef;
 	$self->{sequencing_type} = undef;
 	$self->{dependency_list} = undef;
+	$self->{samples} = undef;
+	$self->{config} = undef;
 	bless($self);
 	return $self;
 }
 
-=head3 egeno_list
+=head3 snp_array_dir
 
- $egeno_msub->egeno_list("/path/to/egenolist.txt");
-
-Gets and sets the path to the eGenotyping list, which contains line items of analysis IDs and the path(s) to their associated CSFASTA files (space-delimited).
-
-=cut
-
-sub egeno_list {
-	my $self = shift;
-	if (@_) { $self->{egeno_list} = shift }
-	return $self->{egeno_list}; #\w+.txt$
-}
-
-=head3 snp_array
-
- $egeno_msub->snp_array("snp_directory_name");
+ $egeno_msub->snp_array_dir("snp_directory_name");
 
 Gets and sets the directory name in which the birdseed files (SNP arrays) are located.
 
 =cut
 
-sub snp_array {
+sub snp_array_dir {
 	my $self = shift;
-	if (@_) { $self->{snp_array} = shift }
-	return $self->{snp_array}; #[^\0]+
+	if (@_) { $self->{snp_array_dir} = shift }
+	return $self->{snp_array_dir}; #[^\0]+
 }
 
 =head3 probe_list
@@ -125,6 +113,34 @@ sub dependency_list {
 	return $self->{dependency_list};
 }
 
+=head3 samples
+
+ $scheduler->samples(\%samples);
+
+Gets and sets a hash reference to the Samples container.
+
+=cut
+
+sub samples {
+	my $self = shift;
+	if (@_) { $self->{samples} = shift }
+	return $self->{samples};
+}
+
+=head3 config
+
+ $scheduler->config(\%config);
+
+Gets and sets the hash reference to the configuration hash.
+
+=cut
+
+sub config {
+	my $self = shift;
+	if (@_) { $self->{config} = shift }
+	return $self->{config};
+}
+
 =head3 execute
 
  $egeno_msub->execute;
@@ -135,29 +151,32 @@ Iterates on the eGenotyping list provided, and submits the concordance analysis 
 
 sub execute {
 	my $self = shift;
-	open(FIN, $self->egeno_list);
-	my $job_counter = 1;
-	while(my $line = <FIN>)
-	{
-		chomp($line);
-		my @line_vals = split(/\s+/, $line);
-		my $analysis_id = shift @line_vals;
-		my $csfasta_files = join(',', @line_vals);
+	my %samples = %{ $self->samples };
+	my %config = %{ $self->config };
 
-		my $command = "\"/users/p-qc/dev_concordance_pipeline/Concordance/Egenotyping/e-Genotyping_concordance.pl $analysis_id $csfasta_files ".$self->snp_array." ".$self->probe_list." ".$self->sequencing_type." \"";
+	foreach my $sample (values %samples) {
+		my $command = "\"".
+		$config{"egeno_concordance_script"}." ".
+		$sample->run_id." ".
+		$sample->result_path." ".
+		$self->snp_array_dir." ".
+		$self->probe_list." ".
+		$self->sequencing_type." ".
+		$sample->snp_array." ".
+		"\"";
 
 		my $scheduler = Concordance::Common::Scheduler->new;
 		$scheduler->command($command);
-		$scheduler->job_name_prefix($job_counter++."_".$$."_".int(rand(5000))."_eGeno_concor.job");
+		$scheduler->job_name_prefix($sample->run_id."_".$$."_".int(rand(5000))."_eGeno_concor.job");
 		$scheduler->cores(2);
 		$scheduler->memory(20000);
 		$scheduler->priority("normal");
 		$scheduler->execute;
 
 		$self->dependency_list($scheduler->job_id);
-		sleep(5);
+
+		sleep(5); # msub doesn't like too many submissions at once
 	}
-	close(FIN);
 }
 
 1;
