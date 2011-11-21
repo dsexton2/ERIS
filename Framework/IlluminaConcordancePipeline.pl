@@ -9,14 +9,16 @@ use diagnostics;
 # ARGV[2] - SNP array directory
 # ARGV[3] - path to probelist
 # ARGV[4] - project name, which determines Judgement CSV headers
+# ARGV[5] - path to configuration file
 
-if (scalar @ARGV != 5) {
+if (scalar @ARGV != 6) {
 	die "Usage: perl IlluminaConcordancePipeline.pl ".
 		"path/to/run_id_list ".
 		"path/to/EGtIllPrep/results ".
 		"/path/to/SNP_array_directory ".
 		"/path/to/probelist ".
 		"project_name_to_determine_judgement_headers ".
+		"/path/to/config/file".
 		"\n";
 }
 
@@ -34,6 +36,7 @@ use Concordance::EGtIllPrep;
 use Concordance::Judgement;
 use Concordance::Utils;
 use Concordance::Common::Scheduler;
+use Config::General;
 
 # 1. Run LIMS webservice query
 # 2. EGtIllPrep - Illumina eGenotyping concordance preparation
@@ -46,12 +49,14 @@ my $egtIllPrep_result_path = $ARGV[1];
 my $SNP_array_directory_path = $ARGV[2];
 my $probelist_path = $ARGV[3];
 my $project_name = $ARGV[4];
+my $config_file_path = $ARGV[5];
 
 # validate the input
 if (!-e $run_id_list_path) { croak $! }
 if (!-w $egtIllPrep_result_path) { croak $! }
 if (!-e $SNP_array_directory_path) { croak $! }
 if (!-e $probelist_path) { croak $! }
+if (!-e $config_file_path) { croak $! }
 
 open(FIN, $run_id_list_path) or croak $!;
 my $run_id_list = do { local $/; <FIN> };
@@ -62,6 +67,9 @@ $run_id_list =~ s/(.*),/$1/;
 # Run LIMS webservice query
 my %samples = Concordance::Utils->populate_sample_info_hash($run_id_list);
 
+# Load configuration file
+my %config = new Config::General($config_file_path)->getall;
+
 # Illumina eGenotyping concordance preparation
 print "Running EGtIllPrep...\n";
 my $egtIllPrep = Concordance::EGtIllPrep->new;
@@ -69,13 +77,14 @@ $egtIllPrep->samples(\%samples);
 $egtIllPrep->output_txt_path($egtIllPrep_result_path);
 $egtIllPrep->execute;
 
-# Submit concordance anlysis jobs to MOAB
+# Submit concordance analysis jobs to MOAB
 print "Running EGenotypingConcordanceMsub...\n";
 my $ecm = Concordance::EGenotypingConcordanceMsub->new;
-$ecm->egeno_list($egtIllPrep_result_path);
-$ecm->snp_array($SNP_array_directory_path);
+$ecm->config(\%config);
+$ecm->snp_array_dir($SNP_array_directory_path);
 $ecm->probe_list($probelist_path);
-$ecm->sequencing_type("illumina");
+$ecm->sequencing_type("solid");
+$ecm->samples($egtIllPrep->samples);
 $ecm->execute;
 
 # get the job IDs of the jobs submitted; we'll want to wait until these complete

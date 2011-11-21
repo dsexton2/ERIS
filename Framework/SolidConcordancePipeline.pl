@@ -9,6 +9,7 @@ use diagnostics;
 # ARGV[2] - SNP array directory
 # ARGV[3] - path to probelist
 # ARGV[4] - project name, which determines Judgement CSV headers
+# ARGV[5] - path to configuration file
 
 if (scalar @ARGV != 6) {
 	die "Usage: perl IlluminaConcordancePipeline.pl ".
