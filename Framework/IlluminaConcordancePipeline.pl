@@ -83,7 +83,7 @@ my $ecm = Concordance::EGenotypingConcordanceMsub->new;
 $ecm->config(\%config);
 $ecm->snp_array_dir($SNP_array_directory_path);
 $ecm->probe_list($probelist_path);
-$ecm->sequencing_type("solid");
+$ecm->sequencing_type("illumina");
 $ecm->samples($egtIllPrep->samples);
 $ecm->execute;
 
