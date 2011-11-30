@@ -229,9 +229,13 @@ sub read_bz2_files {
 					}
 
 					if (exists($probes_with_homozygous_variant_calls{$probes{$match}})) {
-						if ($SNP_color eq $probes_with_homozygous_variant_calls{$probes{$match}}) {
+						print STDOUT "checking ".$probes{$match}.", pwhvc has ".$probes_with_homozygous_variant_calls{$probes{$match}}." while aab has ".$alt_allele_bs{$match};
+						my @snp_base_vals = split(//, $SNP_base);
+						if ($snp_base_vals[0] ne $probes_with_homozygous_variant_calls{$probes{$match}}) {
 							$contamination_count++;
+							print " ...  contamination count now at $contamination_count";
 						}
+						print "\n";
 						$total_alleles_matched++;
 					}
 				} 	
