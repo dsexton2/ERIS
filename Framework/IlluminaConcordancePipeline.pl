@@ -37,6 +37,7 @@ use Concordance::Judgement;
 use Concordance::Utils;
 use Concordance::Common::Scheduler;
 use Config::General;
+use File::Touch;
 
 # 1. Run LIMS webservice query
 # 2. EGtIllPrep - Illumina eGenotyping concordance preparation
@@ -53,10 +54,12 @@ my $config_file_path = $ARGV[5];
 
 # validate the input
 if (!-e $run_id_list_path) { croak $! }
-if (!-w $egtIllPrep_result_path) { croak $! }
 if (!-e $SNP_array_directory_path) { croak $! }
 if (!-e $probelist_path) { croak $! }
 if (!-e $config_file_path) { croak $! }
+
+eval { touch($egtIllPrep_result_path) };
+if ($@) { croak $@ }
 
 open(FIN, $run_id_list_path) or croak $!;
 my $run_id_list = do { local $/; <FIN> };
