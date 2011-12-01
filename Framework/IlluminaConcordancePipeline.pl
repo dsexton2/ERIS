@@ -11,14 +11,15 @@ use diagnostics;
 # ARGV[4] - project name, which determines Judgement CSV headers
 # ARGV[5] - path to configuration file
 
-if (scalar @ARGV != 6) {
+if (scalar @ARGV < 6) {
 	die "Usage: perl IlluminaConcordancePipeline.pl ".
 		"path/to/run_id_list ".
 		"path/to/EGtIllPrep/results ".
 		"/path/to/SNP_array_directory ".
 		"/path/to/probelist ".
 		"project_name_to_determine_judgement_headers ".
-		"/path/to/config/file".
+		"/path/to/config/file ".
+		"-no_lims".
 		"\n";
 }
 
@@ -61,14 +62,20 @@ if (!-e $config_file_path) { croak $! }
 eval { touch($egtIllPrep_result_path) };
 if ($@) { croak $@ }
 
-open(FIN, $run_id_list_path) or croak $!;
-my $run_id_list = do { local $/; <FIN> };
-close(FIN) or carp $!;
-$run_id_list =~ s/\n/,/g;
-$run_id_list =~ s/(.*),/$1/;
-
 # Run LIMS webservice query
-my %samples = Concordance::Utils->populate_sample_info_hash($run_id_list);
+my %samples;
+if ($ARGV[6] ne "-no_lims") {
+	open(FIN, $run_id_list_path) or croak $!;
+	my $run_id_list = do { local $/; <FIN> };
+	close(FIN) or carp $!;
+	$run_id_list =~ s/\n/,/g;
+	$run_id_list =~ s/(.*),/$1/;
+	%samples = Concordance::Utils->populate_sample_info_hash($run_id_list);
+}
+else {
+	# hack to deal with old Illumina data lacking run IDs
+	%samples = Concordance::Utils->populate_samples_from_csv($run_id_list_path);
+}
 
 # Load configuration file
 my %config = new Config::General($config_file_path)->getall;
