@@ -7,6 +7,10 @@ use Log::Log4perl;
 use Concordance::Sample;
 use Carp;
 
+if (!Log::Log4perl->initialized()) {
+	Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");
+}
+
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $error_screen = Log::Log4perl->get_logger("errorScreenLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -44,8 +48,7 @@ sub get_file_list {
 	if (@_) { $file_extension = shift }
 	my @files = glob($path."/*.".$file_extension);
 	if ($#files == -1) {
-		#$error_log->error("No ".$file_extension." files found in ".$path."\n");
-		exit;
+		$error_log->error("No ".$file_extension." files found in ".$path."\n");
 	}
 	return @files;
 }
