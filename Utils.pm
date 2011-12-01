@@ -5,6 +5,7 @@ use warnings;
 use diagnostics;
 use Log::Log4perl;
 use Concordance::Sample;
+use Carp;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $error_screen = Log::Log4perl->get_logger("errorScreenLogger");
@@ -88,6 +89,29 @@ sub populate_sample_info_hash {
 	return %{ (validate_samples_container(\%samples)) };
 }
 
+sub populate_samples_from_csv {
+	shift;
+	my $input_csv_file = shift;
+	if (!-e $input_csv_file) { croak $! }
+
+	my %samples = ();
+
+	open(FIN, $input_csv_file) or croak $!;
+	while (<FIN>) {
+		chomp;
+		my @data_by_cols = split(/,/);
+		$samples{$data_by_cols[0]} = Concordance::Sample->new;
+		$samples{$data_by_cols[0]}->run_id($data_by_cols[0]);
+		$samples{$data_by_cols[0]}->snp_array($data_by_cols[1]);
+		$samples{$data_by_cols[0]}->sample_id($data_by_cols[2]);
+		$samples{$data_by_cols[0]}->result_path($data_by_cols[3]);
+	}
+	close(FIN) or carp $!;
+
+	return %{ (validate_samples_container(\%samples)) };
+
+}
+
 =head3 validate_samples_container
 
  $validate_samples_container(\%samples);
@@ -120,6 +144,23 @@ sub validate_samples_container {
 		}	
 	}
 	return \%samples;
+}
+
+=head3 load_runIds_from_file
+
+=cut
+
+sub load_runIds_from_file {
+	shift;
+	my $runId_file = shift;
+	my $runId_list = "";
+	if (!-e $runId_file) { croak "$runId_file DNE: $!" }
+	open(FIN, $runId_file) or croak $!;
+	while (my $line = <FIN>) {
+		chomp($line);
+		$runId_list .= $line.",";
+	}
+	close(FIN) or carp $!;
 }
 
 sub print_to_error_log_and_screen {
