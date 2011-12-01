@@ -1,20 +1,35 @@
-#!/hgsc_software/perl/latest/bin/perl
 package Concordance::Bs2birdseed;
+
+=head1 NAME
+
+Concordance::Bs2birdseed;
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head2 Methods
+
+=cut
 
 use strict;
 use warnings;
+
+use Carp;
 use Config::General;
 use File::Copy;
 use Log::Log4perl;
 use Concordance::Utils;
 
+if (!Log::Log4perl->initialized()) {
+	Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
+}
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
 	my $self = {};
 	$self->{path} = undef;
-	$self->{project_name} = undef;
 	bless($self);
 	return $self;
 }
@@ -23,12 +38,6 @@ sub path {
 	my $self = shift;
 	if (@_) { $self->{path} = shift; }
 	return $self->{path}; #[^\0]+
-}
-
-sub project_name {
-	my $self = shift;
-	if (@_) { $self->{project_name} = shift; }
-	return $self->{project_name}; #[^\0]+
 }
 
 sub execute {
@@ -53,16 +62,6 @@ sub execute {
 		}
 		close(FIN);
 		close(FOUT);
-	}
-}
-
-sub move_birdseed_to_project_dir {
-	my $self = shift;
-	if (-e $self->path."/".$self->project_name) {
-		my @files = Concordance::Utils->get_file_list($self->path, "birdseed");
-		foreach my $file (@files) {
-			move($file, $self->path."/".$self->project_name);
-		}
 	}
 }
 
