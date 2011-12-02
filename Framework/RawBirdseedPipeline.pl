@@ -6,7 +6,7 @@ use diagnostics;
 
 use Carp;
 use Concordance::Bs2birdseed;
-use Concordance::Change_AA_to_0;
+use Concordance::ConvertRawBirdseedGenotypeEncoding;
 use Concordance::GeliToBs;
 use Concordance::RawBsToGeli;
 
@@ -35,9 +35,15 @@ if (!-e $raw_birdseed_dir) { croak $! }
 my %config = new Config::General($config_file_path)->getall;
 
 print "Converting Illumina genotype encoding to birdseed encoding ... \n";
-my $aa20 = Concordance::Change_AA_to_0->new;
-$aa20->path($raw_birdseed_dir);
-$aa20->execute;
+my $convert_geno_enc = Concordance::ConvertRawBirdseedGenotypeEncoding->new;
+$convert_geno_enc->path($raw_birdseed_dir);
+$convert_geno_enc->execute;
+
+my @dependency_list = split(/:/, $convert_geno_enc->dependency_list);
+if (@dependency_list != 0) {
+	$debug_log->debug("RawBsToGeli dependency list: @dependency_list\n");
+	&wait_for_jobs_to_finish("RawBsToGeli", \@dependency_list);
+}
 
 print "Converting raw birdseed files to geli files ... \n";
 my $rbtg = Concordance::RawBsToGeli->new;
@@ -46,9 +52,11 @@ $rbtg->raw_birdseed_dir($raw_birdseed_dir);
 $rbtg->project_name($project_name);
 $rbtg->execute;
 
-my @dependency_list = split(/:/, $rbtg->dependency_list);
-$debug_log->debug("RawBsToGeli dependency list: @dependency_list\n");
-&wait_for_jobs_to_finish("RawBsToGeli", \@dependency_list);
+@dependency_list = split(/:/, $rbtg->dependency_list);
+if (@dependency_list != 0) {
+	$debug_log->debug("RawBsToGeli dependency list: @dependency_list\n");
+	&wait_for_jobs_to_finish("RawBsToGeli", \@dependency_list);
+}
 
 print "Converting geli files to bs files ... \n";
 my $gtb = Concordance::GeliToBs->new;
@@ -57,8 +65,10 @@ $gtb->geli_dir($raw_birdseed_dir);
 $gtb->execute;
 
 @dependency_list = split(/:/, $rbtg->dependency_list);
-$debug_log->debug("GeliToBs dependency list: @dependency_list\n");
-&wait_for_jobs_to_finish("GeliToBs", \@dependency_list);
+if (@dependency_list != 0) {
+	$debug_log->debug("GeliToBs dependency list: @dependency_list\n");
+	&wait_for_jobs_to_finish("GeliToBs", \@dependency_list);
+}
 
 print "Converting bs files to birdseed files ... \n";
 my $bs2birdseed = Concordance::Bs2birdseed->new;
@@ -83,4 +93,3 @@ sub wait_for_jobs_to_finish {
 		if (scalar @$dependency_list > 0) { sleep(600) }
 	}
 }
-
