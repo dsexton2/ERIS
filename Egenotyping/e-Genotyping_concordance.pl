@@ -132,6 +132,7 @@ else {
 	while (my $line = <FIN_SELF_SNP>) {
 		# line = 2	176194391	A	AA
 		my @line_cols = split(/\t/, $line);
+		$line_cols[0] =~ s/chr//;
 		my @genotype_call = split(//, $line_cols[3]);
 		if ((($line_cols[2] ne $genotype_call[0]) and ($line_cols[2] ne $genotype_call[1]))
 			and ($genotype_call[0] eq $genotype_call[1])) {
