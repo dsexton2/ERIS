@@ -1,25 +1,64 @@
 package Concordance::Judgement;
 
+=head1 NAME
+
+Concordance::Judgement
+
+=head1 SYNOPSIS
+
+ my $judgement = Concordance::Judgement->new;
+ $judgement->output_csv($output_csv_file);
+ $judgement->project_name($project_name);
+ $judgement->birdseed_txt_dir($birdseed_txt_dir);
+ $judgement->samples(\%samples);
+ $judgement->execute;
+
+=head1 DESCRIPTION
+
+This module judges the concordance analyses.
+
+=head2 Methods
+
+=cut
+
 use strict;
 use warnings;
 use diagnostics;
 use Log::Log4perl;
 use Concordance::Utils;
 
+if (!Log::Log4perl->initialized()) {
+	Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");
+}
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
 my $warn_log = Log::Log4perl->get_logger("warnLogger");
 
+=head3 new
+
+ my $judgement = Concordance::judgement->new;
+
+Returns a new instance of Concordance::Judgement.
+
+=cut
+
 sub new {
 	my $self = {};
 	$self->{project_name} = undef;
-	$self->{input_csv_path} = undef;
-	$self->{snp_array_dir} = undef;
 	$self->{output_csv} = undef;
 	$self->{samples} = undef;
+	$self->{birdseed_txt_dir} = undef;
 	bless($self);
 	return $self;
 }
+
+=head3 project_name
+
+ $judgement->project_name("foo");
+
+Gets and sets the project name.
+
+=cut
 
 sub project_name {
 	my $self = shift;
@@ -27,17 +66,14 @@ sub project_name {
 	return $self->{project_name}; #[^\0]+
 }
 
-sub input_csv_path {
-	my $self = shift;
-	if (@_) { $self->{input_csv_path} = shift }
-	return $self->{input_csv_path}; #\w+.csv$
-}
+=head3 output_csv
 
-sub snp_array_dir {
-	my $self = shift;
-	if (@_) { $self->{snp_array_dir} =  shift }
-	return $self->{snp_array_dir}; #[^\0]+
-}
+ $judgement->output_csv("/foo/bar.csv");
+
+Gets and sets the path to the CSV file, to which shall be written the judgement
+results.
+
+=cut
 
 sub output_csv {
 	my $self = shift;
@@ -45,171 +81,266 @@ sub output_csv {
 	return $self->{output_csv}; #\w+.csv$
 }
 
+=head3 samples
+
+ $judgement->samples(\%samples_param);
+
+Gets and sets the hash reference to the Sample container.
+
+=cut
+
 sub samples {
 	my $self = shift;
 	if (@_) { $self->{samples} = shift }
 	return $self->{samples};
 }
 
+=head3 birdseed_txt_dir
+
+ $judgement->birdseed_txt_dir("/foo/bar");
+
+Gets and sets the path to the CSV file, to which shall be written the judgement
+results.
+
+=cut
+
+sub birdseed_txt_dir {
+	my $self = shift;
+	if (@_) { $self->{birdseed_txt_dir} =  shift }
+	return $self->{birdseed_txt_dir}; #\w+.csv$
+}
+
+=head3 execute
+
+ $judgement->execute;
+
+Public method to kick off concordance judgement; named execute to follow the
+convention of other classes.
+
+=cut
+
 sub execute {
 	my $self = shift;
-	$self->judge;
+	$self->__judge__;
 }
 
+=head3 __print_summary__
 
-sub get_rules {
+ $self->__print_summary__($hashref);
+
+Private method to print to the screen a summary of the judgement analysis, which
+consists of each state seen and a count of that state.
+
+=cut
+
+sub __print_summary__ {
 	my $self = shift;
-	open(FIN, "/users/p-qc/dev_concordance_pipeline/Concordance/config/judgement_rules") or die $!;
-	my $rules_content = do { local $/; <FIN> };
+	my $judgement_report_information = shift;
+
+	my $summary_message = "Concordance Analysis Summary for ".$self->project_name.": \n";
+	
+	foreach my $judgement_state (keys %$judgement_report_information) {
+		$summary_message .= "\t".$judgement_state."\t".$judgement_report_information->{$judgement_state}."\n";
+	}
+	
+	print $summary_message;
+}
+
+=head3 __print_report__
+
+ $self->__print_report__($hashref);
+
+Private method to print a CSV containing the results of the judgement analysis.
+
+=cut
+
+sub __print_report__ {
+	my $self = shift;
+	my $judgement_hashref = shift;
+
+	open(FOUT, ">".$self->output_csv) or croak $!;
+	# print headers
+	print FOUT "State,Sequencing Event ID,Sample ID,Average Concordance,".
+		"1st Self Concordance,Best Hit ID,Best Hit Concordance,".
+		"2nd Best Hit ID,2nd Best Hit Concordance,3rd Best Hit ID,".
+		"3rd Best Hit Concordance,4th Best Hit ID,4th Best Hit Concordance,".
+		"5th Best Hit ID,5th Best Hit Concordance,6th Best Hit ID,".
+		"6th Best Hit Concordance\n";
+
+	foreach my $judgement (values %$judgement_hashref) {
+		print FOUT $judgement->{judgement_state}.",".
+			$judgement->{sample}->run_id.",".
+			$judgement->{sample}->sample_id.",".
+			$judgement->{average}.",".
+			$judgement->{self_concordance};
+		# print best hit ID/value pairs
+		foreach my $best_hit_id (sort { $judgement->{concordance_pairs}->{$b} <=> $judgement->{concordance_pairs}->{$a} } (keys %{ $judgement->{concordance_pairs} })) {
+			print FOUT ",".$best_hit_id.",".$judgement->{concordance_pairs}->{$best_hit_id};
+		}
+		print FOUT "\n";
+	}
+
+	close(FOUT) or carp $!;
+}
+
+=head3 __build_concordance_hash__
+
+ $__build_concordance_hash__($birdseed_txt_file);
+
+Private method to read a birdseed file and build a hash of SNP_array_name =>
+concordance_value pairs.
+
+=cut
+
+sub __build_concordance_hash__ {
+	my %concordance = ();
+	open(FIN, my $file = shift);
+	while(<FIN>) {
+		chomp;
+		if ($_ =~ /\//) {
+			$error_log->error("$file is an angry birdseed file!!\n");
+			last;
+		} 
+		my @line_cols = split(/\s+/);
+		$concordance{$line_cols[0]} = $line_cols[8];
+	}
 	close(FIN);
-	my $project_name = $self->project_name; # so I don't have to do interpolation work-arounds
-	if ($rules_content !~ m/$project_name/) {
-		print STDOUT "Warning: No rule for $project_name in judgement_rules.  Using default headers...\n";
-		$warn_log->warn("Warning: No rule for $project_name in judgement_rules.  Using default headers...\n");
-		$project_name = "default";
-	}
-	my %rules = ();
-	if ($rules_content =~ /project=($project_name)\nrunid=(.*)\nsampleid=(.*)\naverage=(.*)\nslf=(.*)\nbestHitID=(.*)\nbestHitValue=(.*)\nheader="(.*)"\n/) {
-		$rules{"runid"} = $2;
-		$rules{"sampleid"} = $3;
-		$rules{"average"} = $4;
-		$rules{"slf"} = $5;
-		$rules{"bestHitID"} = $6;
-		$rules{"bestHitValue"} = $7;
-		$rules{"header"} = $8;
-	}
-	return %rules;
+	return \%concordance;
 }
 
-sub email_output {
-}
+=head3 __build_prejudgement_hash__
 
-sub judge {
-	# need birdseed2tsv file, sample<=>snparray tsv ... or csvs. whatevs
+ my $judgement_hashref = $self->__build_prejudgement_hash__;
+
+Private method to build a structure containing the information necessary for
+judgement.
+	run_id =>
+			sample => Concordance::Sample
+			judgement_state => TBD in judge method
+			average => ...
+			self_concordance => ...
+			concordance_pairs =>
+								foreach (1..$max_pairs)
+								best_hit_id => ...
+								best_hit_value => ...
+
+=cut
+
+sub __build_prejudgement_hash__ {
 	my $self = shift;
-	my %sample_snp_pairs = ();
-	my %rules = $self->get_rules;
+	my $samples = $self->samples;
 
-	my $lowConc = 0;
-	my $insen = 0;
-	my $known = 0;
-	my $unknown = 0;
-	my $contam = 0;
-	my $marginal = 0;
-	my $pass = 0;
-	my $passGreater = 0;
-	my $missing = 0;
-	my $newline = "";
-	
-	open(FOUT, ">".$self->output_csv) or die $!;
-	my $header = $rules{"header"};
-	$header =~ s/\t/,/g;
-	print FOUT $header."\n";
-	
-	my %samples = %{ $self->samples };
-	foreach my $sample (values %samples) {
-		$sample_snp_pairs{$sample->run_id} = $sample->snp_array;
-	}
-	open(FINPUT, $self->input_csv_path) or die $!;
-	while (my $line = <FINPUT>) {
-		chomp($line);
-		$newline = "";
-		my @line_cols = undef;
-		@line_cols = split(/,/, $line);
-		# this is really run_id now
-		my $runid = $line_cols[$rules{"runid"}];
-		my $sampleid = $line_cols[$rules{"sampleid"}];
-		my $average = $line_cols[$rules{"average"}];
-		my $slf = $line_cols[$rules{"slf"}];
-		my $bestHitID = $line_cols[$rules{"bestHitID"}]; # aka snp_array_name
-		my $bestHitValue = $line_cols[$rules{"bestHitValue"}];
-
-		if (!exists($samples{$runid})) {
-			print STDERR "$runid found in Birdseed2Csv output, but not in Samples container; continuing ...\n";
+	my $prejudgement_hashref = {};
+	foreach my $sample (values %$samples) {
+		# look for the .birdseed.txt produced by e-Genotyping concordance analysis
+		# will be named with the run ID, i.e. <run_id>.birdseed.txt
+		my $birdseed_txt_file = $self->birdseed_txt_dir."/".$sample->run_id.".birdseed.txt";
+		if (!-e $birdseed_txt_file) {
+			carp $!." ... missing .birdseed.txt file for run ID ".$sample->run_id."\n";
 			next;
 		}
+		$debug_log->debug("Processing file $birdseed_txt_file for prejudgement ...\n");
 
-		# if 0.5 > average > 0.75, we're not checking
-		if ($average < 0.5) {
-			$newline = "Low Average Concordance,$line";
-			$lowConc += 1;
-		}
-		elsif ($average > 0.75) {
-			$newline = "Insensitive Test,$line";
-			$insen += 1;
+		$prejudgement_hashref->{$sample->run_id}->{sample} = $sample;
+		my $concordance = __build_concordance_hash__($birdseed_txt_file);
+		my $num = scalar keys %$concordance;
+
+		# get the self-concordance value from the hash using the self-named SNP array as key
+		if (defined($concordance->{$sample->snp_array})) {
+			$prejudgement_hashref->{$sample->run_id}->{self_concordance} = $concordance->{$sample->snp_array};
 		}
 		else {
-			my $snp = $sample_snp_pairs{$runid};
-			print "comparing $bestHitID to $snp with self concordance of $slf and bestHitValue $bestHitValue\n";
-			if ($line !~ m/$snp/) {
-				$newline = "Missing SNP array file ".
-					$self->snp_array_dir."/".$samples{$runid}->snp_array.".birdseed ".
-					" for run ID ".$runid;
-				$missing += 1;
-				$line =~ s/$slf//;
-				#TODO sampleid, avg, NO SELF, best
-				$newline .= ",".$line;
-			}
-			elsif ($slf > 0.9 and $slf >= $bestHitValue) {
-				$newline = "Pass,$line";
-				$pass += 1;
-			}
-			elsif ($slf > 0.9 and $slf < $bestHitValue) {
-				$newline = "Pass - Best hit greater than self concordance: $bestHitID,$line";
-				$passGreater += 1;
-			}
-			elsif ($slf >= 0.8 and $slf <= 0.9) {
-				$newline = "Marginal Concordance,$line";
-				$marginal += 1;
-			}
-			elsif ($slf < 0.8 and $bestHitValue > 0.9) {
-				$newline = "Known Swap - $bestHitID,$line";
-				$known += 1;
-			}
-			elsif ($slf < 0.8 and $bestHitValue < 0.8) {
-				$newline = "Unknown Swap,$line";
-				$unknown += 1;
-			}
-			elsif ($slf < 0.8 and $bestHitValue >= 0.8 and $bestHitValue <= 0.9) {
-				$newline = "Possible Contamination,$line";
-				$contam += 1;
+			$prejudgement_hashref->{$sample->run_id}->{self_concordance} = "N/A";
+			$prejudgement_hashref->{$sample->run_id}->{judgement_state} = "Missing SNP array";
+		}
+
+		# compute the average concordance value from the concordance hash
+		my $average = "0";
+		if (scalar keys %$concordance != 0) {
+			foreach my $concordance_value (values %$concordance) { $average += $concordance_value }
+			$average = $average / (scalar keys %$concordance);
+		}
+		$prejudgement_hashref->{$sample->run_id}->{average} = $average;
+		
+		# grab the first $max_pairs %$concordance items, sorting in descending
+		# order of concordance value
+		my $max_pairs = 6;
+		if (scalar keys %$concordance != 0) {
+			foreach my $key (sort { $concordance->{$b} <=> $concordance->{$a} } (keys %$concordance)) {
+				$prejudgement_hashref->{$sample->run_id}->{concordance_pairs}->{$key} = $concordance->{$key};
+				if (--$max_pairs == 0) { last; }
 			}
 		}
-		if ($newline ne "") { print FOUT $newline."\n"; }
+		else {
+			print "No concordance values for $birdseed_txt_file";
+		}
 	}
-	close(FINPUT);
-	close(FOUT);
-	my $message = "Concordance Analysis Summary for ".$self->project_name.": \n\n\tPass:\t$pass\n\tPass (Not Best Hit):\t$passGreater\n\n\tKnown Swaps:\t$known\n\tUnknown Swaps:\t$unknown\n\tContaminated:\t$contam\n\tMarginal Concordance:\t$marginal\n\tInsensitive Test:\t$insen\n\tMissing SNP Arrays:\t$missing";
-	print $message;
+	return $prejudgement_hashref;
+}
+
+=head3 __judge__
+
+ $self->__judge__;
+
+Private method that does the work of concordance judgement.
+
+=cut
+
+sub __judge__ {
+	my $self = shift;
+	my $samples = $self->samples;
+	my %judgement_report_information;
+	my $judgement_hashref = $self->__build_prejudgement_hash__;
+
+	foreach my $sample (values %$samples) {
+		if (defined($judgement_hashref->{$sample->run_id}->{judgement_state})) {
+			# this will only pass if it's "Missing SNP array" in the concordance values
+			# constructed from $sample->run_id.".birdseed"
+			next;
+		}
+		if ($judgement_hashref->{$sample->run_id}->{average} < 0.5) {
+			$judgement_hashref->{$sample->run_id}->{judgement_state} = "Low Average Concordance";
+		}
+		elsif ($judgement_hashref->{$sample->run_id}->{average} > 0.75) {
+			$judgement_hashref->{$sample->run_id}->{judgement_state} = "Insensitive Test";
+		}
+		else {
+			# the $best_hit_value is the highest concordance value from the birdseed.txt file
+			my $best_hit_value = 0;
+			if ($judgement_hashref->{$sample->run_id}->{self_concordance} > 0.9) {
+				if ($judgement_hashref->{$sample->run_id}->{self_concordance} >= $best_hit_value) {
+					$judgement_hashref->{$sample->run_id}->{judgement_state} = "Pass";
+				}
+				else {
+					$judgement_hashref->{$sample->run_id}->{judgement_state} = "Pass - Best hit greater than self concordance";
+				}
+			}
+			elsif (0.8 <= $judgement_hashref->{$sample->run_id}->{self_concordance} and $judgement_hashref->{$sample->run_id}->{self_concordance} <= 0.9) {
+				$judgement_hashref->{$sample->run_id}->{judgement_state} = "Marginal Concordance";
+			}
+			elsif ($judgement_hashref->{$sample->run_id}->{self_concordance} < 0.8) {
+				if ($best_hit_value > 0.9) {
+					$judgement_hashref->{$sample->run_id}->{judgement_state} = "Known Swap";
+				}
+				elsif (0.8 <= $best_hit_value and $best_hit_value <= 0.9) {
+					$judgement_hashref->{$sample->run_id}->{judgement_state} = "Possible Contamination";
+				}
+				else {
+					$judgement_hashref->{$sample->run_id}->{judgement_state} = "Unknown Swap";
+				}
+			}
+		}
+		$judgement_report_information{$judgement_hashref->{$sample->run_id}->{judgement_state}} += 1;
+	}
+	$self->__print_summary__(\%judgement_report_information);
+	$self->__print_report__($judgement_hashref);
 }
 
 1;
 
-=head1 NAME
-
-Concordance::Judgement - wrapper module for Judgement.rb
-
-=head1 SYNOPSIS
-
-=head1 DESCRIPTION
-
-Refactored from Phil's Ruby Judgement script.
-
-=head2 Methods
-
-=over12
-
-=item C<new>
-
-=item C<project_name>
-
-=item C<input_csv_path>
-
-=item C<execute>
-
-=back
-
 =head1 LICENSE
+
+GPLv3.
 
 =head1 AUTHOR
 
