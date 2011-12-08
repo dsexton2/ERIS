@@ -89,7 +89,7 @@ if (!-e $config_file_path) {
 	exit(0);
 }
 $sequencing_type = lc $sequencing_type;
-if ($sequencing_type ne "solid" or $sequencing_type ne "illumina") {
+if ($sequencing_type ne "solid" and $sequencing_type ne "illumina") {
 	print "Bad value for seq-type: $sequencing_type.  Possible values are 'solid' or 'illumina'.\n";
 	exit(0);
 }
