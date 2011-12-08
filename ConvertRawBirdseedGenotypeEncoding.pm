@@ -18,6 +18,7 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 sub new {
 	my $self = {};
 	$self->{path} = undef;
+	$self->{dependency_list} = undef;
 	bless($self);
 	return $self;
 }
@@ -28,12 +29,18 @@ sub path {
 	return $self->{path};
 }
 
+sub dependency_list {
+	my $self = shift;
+	if (@_) { $self->{dependency_list} .= ":".shift }
+	return $self->{dependency_list};
+}
+
 sub execute {
 	my $self = shift;
 	my @files=glob($self->path."/*.txt");
 
 	foreach my $file (@files) {
-		my $cmd = "perl /users/p-qc/dev_concordance_pipeline/convert_raw_birdseed_genotype_encoding.pl $file";
+		my $cmd = "perl /users/p-qc/dev_concordance_pipeline/Concordance/convert_raw_birdseed_genotype_encoding.pl $file";
 		my $scheduler = Concordance::Common::Scheduler->new;
 		$scheduler->command($cmd);
 		$scheduler->job_name_prefix(basename($file)."_toGELI".$$);
