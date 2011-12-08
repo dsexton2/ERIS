@@ -1,4 +1,4 @@
-package ConvertRawBirdseedGenotypeEncoding;
+package Concordance::ConvertRawBirdseedGenotypeEncoding;
 
 use strict;
 use warnings;
