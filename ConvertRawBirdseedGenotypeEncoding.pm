@@ -1,4 +1,4 @@
-package Concordance::Change_AA_to_0;
+package ConvertRawBirdseedGenotypeEncoding;
 
 use strict;
 use warnings;
