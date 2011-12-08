@@ -66,7 +66,7 @@ pod2usage(-exitstatus => 0, -verbose => 1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 # if any 'mandatory' options are missing, exit with usage
-if (!$run_id_list_path or !$prep_result_path or !$SNP_array_directory_path
+if (!$run_id_list_path or !$SNP_array_directory_path
 	or !$probelist_path or !$project_name or !$config_file_path or !$sequencing_type) {
 pod2usage(-exitstatus => 0, -verbose => 1);
 }
@@ -89,7 +89,7 @@ if (!-e $config_file_path) {
 	exit(0);
 }
 $sequencing_type = lc $sequencing_type;
-if ($sequencing_type eq "solid" or $sequencing_type eq "illumina") {
+if ($sequencing_type ne "solid" or $sequencing_type ne "illumina") {
 	print "Bad value for seq-type: $sequencing_type.  Possible values are 'solid' or 'illumina'.\n";
 	exit(0);
 }
@@ -201,7 +201,7 @@ Options:
 
 The path to the file containing the run IDs, one per line.
 
-=item B<-prep_result_path>
+=item B<-prep-result-path>
 
 The path to the file containing the concordance prep results.
 
