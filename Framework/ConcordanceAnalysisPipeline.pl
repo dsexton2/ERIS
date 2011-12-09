@@ -175,7 +175,7 @@ my $judgement = Concordance::Judgement->new;
 $judgement->project_name($project_name);
 $judgement->output_csv($$."_judgement.csv");
 $judgement->samples($samples_ref);
-$judgement->judge;
+$judgement->execute;
 
 =head1 NAME
 
