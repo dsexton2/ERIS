@@ -31,6 +31,7 @@ $debug_log->debug("Processing file: $raw_bs_file\n");
 open(FIN, $raw_bs_file) or croak $!;
 (my $outfile = $raw_bs_file) =~ s/(\.txt)$/\.birdseed\.data\.txt/;
 open(FOUT,">".$outfile) or croak $!;
+open(FOUT_ERR, ">".$outfile.".e") or croak $!;
 
 while (my $line = <FIN>) {
 	chomp($line);
@@ -40,7 +41,7 @@ while (my $line = <FIN>) {
 	else {
 		my @tab_delimited_cols = split(/\t/, $line);
 		if (@tab_delimited_cols != 3) {
-			$error_log->error("1\t".(scalar @tab_delimited_cols)."\t$raw_bs_file\n");
+			print FOUT_ERR "1\t".(scalar @tab_delimited_cols)."\t$raw_bs_file\n";
 			next;
 		}
 		if ($tab_delimited_cols[1] eq "AA") {
@@ -53,10 +54,11 @@ while (my $line = <FIN>) {
 			print FOUT "$tab_delimited_cols[0]\t2\t$tab_delimited_cols[2]\n";
 		}
 		else {
-			$error_log->error("$tab_delimited_cols[0]\t$tab_delimited_cols[1]\t$raw_bs_file\n");
+			print FOUT_ERR "$tab_delimited_cols[0]\t$tab_delimited_cols[1]\t$raw_bs_file\n";
 		}
 	}
 }
 
 close(FIN) or carp $!;
 close(FOUT) or carp $!;
+close(FOUT_ERR) or carp $!;
