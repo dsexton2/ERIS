@@ -149,24 +149,27 @@ $ecm->execute;
 
 # get the job IDs of the jobs submitted; we'll want to wait until these complete
 # to kick of Birdseed2Csv
-my @dependency_list = split(/:/, $ecm->dependency_list);
-$debug_log->debug("dependency list: @dependency_list\n");
-if ($dependency_list[0] eq "") { splice(@dependency_list, 0, 1) }
-
 # wait until all jobs submitted are complete to proceed; absolutely terrible
 # hack to get this done, I am ashamed; but this was less work/easier to figure
 # out than turning Birdseed2Csv and Judgement into things I could submit via
 # msub with a dependency list (which is likely the correct solution)
-print "Waiting for e-Genotyping concordance analysis jobs to finish on msub...\n";
-while (@dependency_list) {
-	foreach my $i (0..$#dependency_list) {
-		my $qstat_info = `qstat $dependency_list[$i]`;
-		if ($qstat_info !~ m/\bR\b/ and $qstat_info !~ m/\bQ\b/) {
-			print "Job ".$dependency_list[$i]." completed.\n";
-			splice (@dependency_list, $i, 1);
+if (defined($ecm->dependency_list)) {
+	my @dependency_list = split(/:/, $ecm->dependency_list);
+	$debug_log->debug("dependency list: @dependency_list\n");
+	print "Waiting for e-Genotyping concordance analysis jobs to finish on msub...\n";
+	while (@dependency_list) {
+		foreach my $i (0..$#dependency_list) {
+			my $qstat_info = `qstat $dependency_list[$i]`;
+			if ($qstat_info !~ m/\bR\b/ and $qstat_info !~ m/\bQ\b/) {
+				print "Job ".$dependency_list[$i]." completed.\n";
+				splice (@dependency_list, $i, 1);
+			}
 		}
+		if (scalar @dependency_list > 0) { sleep(600) }
 	}
-	if (scalar @dependency_list > 0) { sleep(600) }
+}
+else {
+	print "Empty dependency list for EGenotypingConcordanceMsub; it's possible no jobs were submitted.\n"; 
 }
 
 # Generate concordance results

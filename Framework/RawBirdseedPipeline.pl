@@ -47,16 +47,14 @@ if (!-e $raw_birdseed_dir) { croak $raw_birdseed_dir.": ".$! }
 
 my %config = new Config::General($config_file_path)->getall;
 
-my @dependency_list;
-
 if ($convert_geno_enc_flag) {
 	print "Converting Illumina genotype encoding to birdseed encoding ... \n";
 	my $convert_geno_enc = Concordance::ConvertRawBirdseedGenotypeEncoding->new;
 	$convert_geno_enc->path($raw_birdseed_dir);
 	$convert_geno_enc->execute;
 
-	my @dependency_list = split(/:/, $convert_geno_enc->dependency_list);
-	if (@dependency_list != 0) {
+	if (defined($convert_geno_enc->dependency_list)) {
+		my @dependency_list = split(/:/, $convert_geno_enc->dependency_list);
 		$debug_log->debug("RawBsToGeli dependency list: @dependency_list\n");
 		&wait_for_jobs_to_finish("RawBsToGeli", \@dependency_list);
 	}
@@ -69,8 +67,8 @@ $rbtg->raw_birdseed_dir($raw_birdseed_dir);
 $rbtg->project_name($project_name);
 $rbtg->execute;
 
-@dependency_list = split(/:/, $rbtg->dependency_list);
-if (@dependency_list != 0) {
+if (defined($rbtg->dependency_list)) {
+	my @dependency_list = split(/:/, $rbtg->dependency_list);
 	$debug_log->debug("RawBsToGeli dependency list: @dependency_list\n");
 	&wait_for_jobs_to_finish("RawBsToGeli", \@dependency_list);
 }
@@ -81,8 +79,8 @@ $gtb->config(\%config);
 $gtb->geli_dir($raw_birdseed_dir);
 $gtb->execute;
 
-@dependency_list = split(/:/, $rbtg->dependency_list);
-if (@dependency_list != 0) {
+if (defined($gtb->dependency_list)) {
+	my @dependency_list = split(/:/, $gtb->dependency_list);
 	$debug_log->debug("GeliToBs dependency list: @dependency_list\n");
 	&wait_for_jobs_to_finish("GeliToBs", \@dependency_list);
 }
@@ -98,7 +96,6 @@ sub wait_for_jobs_to_finish {
 
 	print "Waiting for $description jobs to finish on msub...\n";
 
-	if (@$dependency_list[0] eq "") { splice(@$dependency_list, 0, 1) }
 	while (@$dependency_list) {
 		foreach my $i (0..$#$dependency_list) {
 			my $qstat_info = `qstat @$dependency_list[$i]`;

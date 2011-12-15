@@ -111,7 +111,14 @@ what msub expects.
 
 sub dependency_list {
 	my $self = shift;
-	if (@_) { $self->{dependency_list} .= ":".shift }
+	if (@_) {
+		if (!defined($self->{dependency_list})) {
+			$self->{dependency_list} = shift;
+		}
+		else {
+			$self->{dependency_list} .= ":".shift
+		}
+	}
 	return $self->{dependency_list};
 }
 
@@ -171,27 +178,25 @@ sub execute {
 			$self->__submit__($sample->run_id, $sample->result_path);
 		}
 	}
-	my @dependency_list;
 	if (defined($self->dependency_list)) {
-		@dependency_list = split(/:/, $self->dependency_list);
+		my @dependency_list = split(/:/, $self->dependency_list);
 		$debug_log->debug("dependency list: @dependency_list\n");
-		if ($dependency_list[0] eq "") { splice(@dependency_list, 0, 1) }
+		print "Waiting for Bam2csfsta jobs to finish on msub...\n";
+		while (@dependency_list) {
+			foreach my $i (0..$#dependency_list) {
+				my $qstat_info = `qstat $dependency_list[$i]`;
+				if ($qstat_info !~ m/\bR\b/ and $qstat_info !~ m/\bQ\b/) {
+					print "Job ".$dependency_list[$i]." completed.\n";
+					$debug_log->debug("Job ".$dependency_list[$i]." completed.\n");
+					splice (@dependency_list, $i, 1);
+				}
+			}
+			if (scalar @dependency_list > 0) { sleep(600) }
+		}
 	}
 	else {
 		print "Warning: dependency_list undefined.  It's possible that no jobs were submitted\n";
 		$warn_log->warn("Warning: dependency_list undefined.  It's possible that no jobs were submitted\n");
-	}
-	print "Waiting for Bam2csfsta jobs to finish on msub...\n";
-	while (@dependency_list) {
-		foreach my $i (0..$#dependency_list) {
-			my $qstat_info = `qstat $dependency_list[$i]`;
-			if ($qstat_info !~ m/\bR\b/ and $qstat_info !~ m/\bQ\b/) {
-				print "Job ".$dependency_list[$i]." completed.\n";
-				$debug_log->debug("Job ".$dependency_list[$i]." completed.\n");
-				splice (@dependency_list, $i, 1);
-			}
-		}
-		if (scalar @dependency_list > 0) { sleep(600) }
 	}
 }
 

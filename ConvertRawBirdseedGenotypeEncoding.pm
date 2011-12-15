@@ -31,7 +31,14 @@ sub path {
 
 sub dependency_list {
 	my $self = shift;
-	if (@_) { $self->{dependency_list} .= ":".shift }
+	if (@_) {
+		if (!defined($self->{dependency_list})) {
+			$self->{dependency_list} = shift;
+		}
+		else {
+			$self->{dependency_list} .= ":".shift
+		}
+	}
 	return $self->{dependency_list};
 }
 
