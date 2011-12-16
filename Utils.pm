@@ -160,10 +160,12 @@ sub load_runIds_from_file {
 	if (!-e $runId_file) { croak "$runId_file DNE: $!" }
 	open(FIN, $runId_file) or croak $!;
 	while (my $line = <FIN>) {
+		if ($runId_list ne "") { $runId_list .= "," }
 		chomp($line);
-		$runId_list .= $line.",";
+		$runId_list .= $line;
 	}
 	close(FIN) or carp $!;
+	return $runId_list;
 }
 
 sub print_to_error_log_and_screen {

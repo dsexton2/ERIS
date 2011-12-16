@@ -100,17 +100,13 @@ if ($@) { croak $@ }
 
 # Run LIMS webservice query
 my %samples;
-if (!$no_lims) {
-	open(FIN, $run_id_list_path) or croak $!;
-	my $run_id_list = do { local $/; <FIN> };
-	close(FIN) or carp $!;
-	$run_id_list =~ s/\n/,/g;
-	$run_id_list =~ s/(.*),/$1/;
-	%samples = Concordance::Utils->populate_sample_info_hash($run_id_list);
-}
-else {
+if ($no_lims) {
 	# hack to deal with old Illumina data lacking run IDs
 	%samples = Concordance::Utils->populate_samples_from_csv($run_id_list_path);
+}
+else {
+	%samples = Concordance::Utils->populate_sample_info_hash(
+		Concordance::Utils->load_runIds_from_file($run_id_list_path));
 }
 
 # Load configuration file
