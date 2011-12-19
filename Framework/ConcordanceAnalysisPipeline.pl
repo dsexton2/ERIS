@@ -227,7 +227,7 @@ Specify whether this is SOLiD or Illumina data.
 
 =item B<--no-lims>
 
-This flag indicates whether to query LIMS using the run ID list, or load all data directly from the file.
+This flag indicates whether to query LIMS using the run ID list, or load all data directly from the file.  The data will be loaded from the file provided for B<-run-id-list>.  It expects a CSV with the following columns (N.B. - no header values are required): run_id, snp_array, sample_id, result_path.
 
 =item B<-help>
 
