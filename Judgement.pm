@@ -48,6 +48,7 @@ sub new {
 	$self->{output_csv} = undef;
 	$self->{samples} = undef;
 	$self->{birdseed_txt_dir} = undef;
+	$self->{results_email_address} = undef;
 	bless($self);
 	return $self;
 }
@@ -63,7 +64,7 @@ Gets and sets the project name.
 sub project_name {
 	my $self = shift;
 	if (@_) { $self->{project_name} = shift; }
-	return $self->{project_name}; #[^\0]+
+	return $self->{project_name};
 }
 
 =head3 output_csv
@@ -78,7 +79,7 @@ results.
 sub output_csv {
 	my $self = shift;
 	if (@_) { $self->{output_csv} =  shift }
-	return $self->{output_csv}; #\w+.csv$
+	return $self->{output_csv};
 }
 
 =head3 samples
@@ -107,7 +108,22 @@ results.
 sub birdseed_txt_dir {
 	my $self = shift;
 	if (@_) { $self->{birdseed_txt_dir} =  shift }
-	return $self->{birdseed_txt_dir}; #\w+.csv$
+	return $self->{birdseed_txt_dir};
+}
+
+=head3 results_email_address
+
+ $judgement->results_email_address("/foo/bar");
+
+Gets and sets the path to the CSV file, to which shall be written the judgement
+results.
+
+=cut
+
+sub results_email_address {
+	my $self = shift;
+	if (@_) { $self->{results_email_address} =  shift }
+	return $self->{results_email_address};
 }
 
 =head3 execute
@@ -160,7 +176,7 @@ sub __print_report__ {
 
 	open(FOUT, ">".$self->output_csv) or croak $!;
 	# print headers
-	print FOUT "State,Sequencing Event ID,Sample ID,Average Concordance,".
+	print FOUT "State,Sequencing Event ID,Sample ID,\% Contamination,Average Concordance,".
 		"1st Self Concordance,Best Hit ID,Best Hit Concordance,".
 		"2nd Best Hit ID,2nd Best Hit Concordance,3rd Best Hit ID,".
 		"3rd Best Hit Concordance,4th Best Hit ID,4th Best Hit Concordance,".
@@ -171,6 +187,7 @@ sub __print_report__ {
 		print FOUT $judgement->{judgement_state}.",".
 			$judgement->{sample}->run_id.",".
 			$judgement->{sample}->sample_id.",".
+			$judgement->{contamination}.",".
 			$judgement->{average}.",".
 			$judgement->{self_concordance};
 		# print best hit ID/value pairs
@@ -183,6 +200,26 @@ sub __print_report__ {
 	close(FOUT) or carp $!;
 }
 
+=head3 __email_report__
+
+ $self->__email_report__("foo@bar.com");
+
+Private method to email the CSV containing the results of the concordance judgement anlysis.
+
+=cut
+
+sub __email_report__ {
+	my $self = shift;
+	if (!defined($self->{results_email_address})) {
+		return;
+	}
+	eval { system("echo \"$self->{project_name} Concordance Judgement Results\" | mutt -a $self->{output_csv} -s \"$self->{project_name} Concordance Judgement Results\" $self->{results_email_address}") };
+	if ($@) {
+		$error_log->error("Error sending email containing the results of the concordance judgement: $@\n");
+		print STDERR "Error sending email containing the results of the concordance judgement: $@\n";
+	}
+}
+
 =head3 __build_concordance_hash__
 
  $__build_concordance_hash__($birdseed_txt_file);
@@ -193,19 +230,22 @@ concordance_value pairs.
 =cut
 
 sub __build_concordance_hash__ {
-	my %concordance = ();
-	open(FIN, my $file = shift);
+	my $concordance = {}; open(FIN, my $file = shift);
 	while(<FIN>) {
 		chomp;
-		if ($_ =~ /\//) {
+		if (m/\//) {
 			$error_log->error("$file is an angry birdseed file!!\n");
 			last;
 		} 
 		my @line_cols = split(/\s+/);
-		$concordance{$line_cols[0]} = $line_cols[8];
+		$concordance->{$line_cols[0]}->{concordance} = $line_cols[8];
+		if ($#line_cols == 13) {
+			# this is the contamination value
+			$concordance->{$line_cols[0]}->{contamination} = $line_cols[13];
+		}
 	}
 	close(FIN);
-	return \%concordance;
+	return $concordance;
 }
 
 =head3 __build_prejudgement_hash__
@@ -215,14 +255,15 @@ sub __build_concordance_hash__ {
 Private method to build a structure containing the information necessary for
 judgement.
 	run_id =>
-			sample => Concordance::Sample
-			judgement_state => TBD in judge method
-			average => ...
-			self_concordance => ...
-			concordance_pairs =>
-								foreach (1..$max_pairs)
-								best_hit_id => ...
-								best_hit_value => ...
+		sample => Concordance::Sample
+		judgement_state => TBD in judge method
+		average => ...
+		self_concordance => ...
+		contamination => ...
+		concordance_pairs =>
+			foreach (1..$max_pairs)
+				best_hit_id => ...
+				best_hit_value => ...
 
 =cut
 
@@ -247,7 +288,8 @@ sub __build_prejudgement_hash__ {
 
 		# get the self-concordance value from the hash using the self-named SNP array as key
 		if (defined($concordance->{$sample->snp_array})) {
-			$prejudgement_hashref->{$sample->run_id}->{self_concordance} = $concordance->{$sample->snp_array};
+			$prejudgement_hashref->{$sample->run_id}->{self_concordance} = $concordance->{$sample->snp_array}->{concordance};
+			$prejudgement_hashref->{$sample->run_id}->{contamination} = $concordance->{$sample->snp_array}->{contamination};
 		}
 		else {
 			$prejudgement_hashref->{$sample->run_id}->{self_concordance} = "N/A";
@@ -257,7 +299,7 @@ sub __build_prejudgement_hash__ {
 		# compute the average concordance value from the concordance hash
 		my $average = "0";
 		if (scalar keys %$concordance != 0) {
-			foreach my $concordance_value (values %$concordance) { $average += $concordance_value }
+			foreach my $concordance_value (values %$concordance) { $average += $concordance_value->{concordance} }
 			$average = $average / (scalar keys %$concordance);
 		}
 		$prejudgement_hashref->{$sample->run_id}->{average} = $average;
@@ -266,8 +308,8 @@ sub __build_prejudgement_hash__ {
 		# order of concordance value
 		my $max_pairs = 6;
 		if (scalar keys %$concordance != 0) {
-			foreach my $key (sort { $concordance->{$b} <=> $concordance->{$a} } (keys %$concordance)) {
-				$prejudgement_hashref->{$sample->run_id}->{concordance_pairs}->{$key} = $concordance->{$key};
+			foreach my $key (sort { $concordance->{$b}->{concordance} <=> $concordance->{$a}->{concordance} } (keys %$concordance)) {
+				$prejudgement_hashref->{$sample->run_id}->{concordance_pairs}->{$key} = $concordance->{$key}->{concordance};
 				if (--$max_pairs == 0) { last; }
 			}
 		}
@@ -334,6 +376,7 @@ sub __judge__ {
 	}
 	$self->__print_summary__(\%judgement_report_information);
 	$self->__print_report__($judgement_hashref);
+	$self->__email_report__;
 }
 
 1;
