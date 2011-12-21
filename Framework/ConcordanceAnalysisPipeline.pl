@@ -4,13 +4,6 @@ use strict;
 use warnings;
 use diagnostics;
 
-# ARGV[0] - run_id_list for LIMS webservice query
-# ARGV[1] - output_txt_path for EGtIllPrep results
-# ARGV[2] - SNP array directory
-# ARGV[3] - path to probelist
-# ARGV[4] - project name, which determines Judgement CSV headers
-# ARGV[5] - path to configuration file
-
 use Carp;
 use Concordance::EGenoSolid;
 use Concordance::EGenotypingConcordanceMsub;
@@ -32,12 +25,6 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 my $debug_to_screen = Log::Log4perl->get_logger("debugScreenLogger");
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 
-# 1. Run LIMS webservice query
-# 2. EGtIllPrep - Illumina eGenotyping concordance preparation
-# 3. EGenotypingConcordanceMsub - Submit concordance analysis jobs to MOAB
-# 4. Birdseed2Csv - Prepare concordance results for Judgement
-# 5. Judgement - Generate concordance results
-
 my $run_id_list_path = '';
 my $prep_result_path = '';
 my $SNP_array_directory_path = '';
@@ -46,7 +33,9 @@ my $project_name = '';
 my $config_file_path = '';
 my $sequencing_type = '';
 my $no_lims = '';
-my $help, my $man;
+my $results_email_address = '';
+my $help = '';
+my $man = '';
 
 GetOptions
 		(
@@ -57,6 +46,7 @@ GetOptions
 			'project-name=s' => \$project_name,
 			'config-path=s' => \$config_file_path,
 			'seq-type=s' => \$sequencing_type,
+			'results-email=s' => \$results_email_address,
 			'no-lims' => \$no_lims,
 			'help|?' => \$help,
 			'man' => \$man
@@ -175,6 +165,9 @@ $judgement->project_name($project_name);
 $judgement->output_csv($$."_judgement.csv");
 $judgement->samples($samples_ref);
 $judgement->birdseed_txt_dir(".");
+# make sure the @ in the email address is escaped, otherwise the system call is unhappy
+$results_email_address =~ s/@/\\@/g;
+$judgement->results_email_address($results_email_address);
 $judgement->execute;
 
 =head1 NAME
@@ -224,6 +217,10 @@ The path to the file containing the concordance pipeline configuration items.
 =item B<--seq-type>
 
 Specify whether this is SOLiD or Illumina data.
+
+=item B<--results-email>
+
+Specifiy the [list of] email address, or alias, to send the Judgement results CSV.
 
 =item B<--no-lims>
 
