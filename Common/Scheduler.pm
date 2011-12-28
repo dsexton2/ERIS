@@ -177,6 +177,7 @@ Private method to build the command to submit via msub.
 
 sub __build_command__ {
 	my $self = shift;
+	if ($self->command !~ m/^".*"$/) { $self->command("\"".$self->command."\"") }
 	my $cmd = "echo ".$self->command." | ".
 		"msub -N ".$self->__build_job_name__." ".
 		"-o ".$self->job_name_prefix.".o ".
@@ -184,9 +185,13 @@ sub __build_command__ {
 		"-q ".$self->priority." ".
 		"-d ".getcwd()." ";
 		if ($self->dependency_list ne "") {
-			$cmd .= "-l depend=afterok".$self->dependency_list;
+			# ensure this list starts with a colon
+			if ($self->dependency_list !~ m/^:/) {
+				$self->dependency_list(":".$self->dependency_list);
+			}
+			$cmd .= " -l depend=afterok".$self->dependency_list;
 		}
-		$cmd .= "-l nodes=1:ppn=".$self->cores.",mem=".$self->memory."mb";
+		$cmd .= " -l nodes=1:ppn=".$self->cores.",mem=".$self->memory."mb";
 	$debug_log->debug($cmd);
 	print $cmd."\n";
 	return $cmd;
