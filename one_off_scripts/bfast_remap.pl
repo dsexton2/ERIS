@@ -68,7 +68,7 @@ sub msub_with_dependencies {
 	$dependency_id = &submit_job($cmd, $dependency_id, $fastq_file_base, "mark_duplicates");
 
 	# The output from this will go into gatk
-	$cmd = "perl /stornext/snfs0/next-gen/project_SNP_calling/software/recalibration_GATK_pipeline.pl $dups_bam_file $gatk_bam_file 2 hg19+";
+	$cmd = "perl /stornext/snfs0/next-gen/project_SNP_calling/software/recalibration_GATK_pipeline.pl $dups_bam_file $gatk_bam_file hg19+";
 	$dependency_id = &submit_job($cmd, $dependency_id, $fastq_file_base, "recal_gatk_pipeline");
 
 	# The output from this will go into read validator
@@ -88,6 +88,6 @@ sub submit_job {
 	$scheduler->dependency_list($dependency_id);
 	$scheduler->execute;
 
-	sleep(5);
+	sleep(1);
 	return $scheduler->job_id;
 }
