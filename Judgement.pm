@@ -24,8 +24,10 @@ This module judges the concordance analyses.
 use strict;
 use warnings;
 use diagnostics;
-use Log::Log4perl;
+
+use Carp;
 use Concordance::Utils;
+use Log::Log4perl;
 
 if (!Log::Log4perl->initialized()) {
 	Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");
