@@ -146,7 +146,7 @@ sub execute {
 
 1;
 
-=headd1 LICENSE
+=head1 LICENSE
 
 GPLv3.
 
