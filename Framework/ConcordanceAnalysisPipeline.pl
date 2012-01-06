@@ -15,6 +15,7 @@ use Config::General;
 use File::Touch;
 use Getopt::Long;
 use Pod::Usage;
+use POSIX;
 
 pod2usage(-exitstatus => 0) if (@ARGV == 0);
 
@@ -25,91 +26,81 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 my $debug_to_screen = Log::Log4perl->get_logger("debugScreenLogger");
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 
-my $run_id_list_path = '';
-my $prep_result_path = '';
-my $SNP_array_directory_path = '';
-my $probelist_path = '';
-my $project_name = '';
-my $config_file_path = '';
-my $sequencing_type = '';
-my $no_lims = '';
-my $results_email_address = '';
-my $help = '';
-my $man = '';
+my %options = ();
 
-GetOptions
-		(
-			'run-id-list=s' => \$run_id_list_path,
-			'prep-result-path=s' => \$prep_result_path,
-			'snp-array-dir=s' => \$SNP_array_directory_path,
-			'probelist-path=s' => \$probelist_path,
-			'project-name=s' => \$project_name,
-			'config-path=s' => \$config_file_path,
-			'seq-type=s' => \$sequencing_type,
-			'results-email=s' => \$results_email_address,
-			'no-lims' => \$no_lims,
-			'help|?' => \$help,
-			'man' => \$man
-		) or pod2usage(-verbose => 1);
+GetOptions (
+	\%options,
+	'run-id-list=s',
+	'prep-result-path=s',
+	'snp-array-dir=s',
+	'probelist-path=s',
+	'project-name=s',
+	'config-path=s',
+	'seq-type=s',
+	'results-email=s',
+	'no-lims',
+	'help|?',
+	'man'
+);
 
-pod2usage(-exitstatus => 0, -verbose => 1) if $help;
-pod2usage(-exitstatus => 0, -verbose => 2) if $man;
-
-# if any 'mandatory' options are missing, exit with usage
-if (!$run_id_list_path or !$SNP_array_directory_path
-	or !$probelist_path or !$project_name or !$config_file_path or !$sequencing_type) {
-pod2usage(-exitstatus => 0, -verbose => 1);
-}
+pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{help});
+pod2usage(-exitstatus => 0, -verbose => 2) if defined($options{man});
 
 # validate the input
-if (!-e $run_id_list_path) {
-	print "run-id-list DNE: $run_id_list_path\n";
+if (!-e $options{'run-id-list'}) {
+	print "run-id-list DNE: ".$options{'run-id-list'}."\n";
 	exit(0);
 }
-if (!-e $SNP_array_directory_path) {
-	print "snp-array-dir DNE: $SNP_array_directory_path\n";
+if (!-e $options{'snp-array-dir'}) {
+	print "snp-array-dir DNE: ".$options{'snp-array-dir'}."\n";
 	exit(0);
 }
-if (!-e $probelist_path) {
-	print "probelist-path DNE: $probelist_path\n";
+if (!-e $options{'probelist-path'}) {
+	print "probelist-path DNE: ".$options{'probelist-path'}."\n";
 	exit(0);
 }
-if (!-e $config_file_path) {
-	print "config-path DNE: $config_file_path";
+if (!-e $options{'config-path'}) {
+	print "config-path DNE: ".$options{'config-path'}."\n";
 	exit(0);
 }
-$sequencing_type = lc $sequencing_type;
-if ($sequencing_type ne "solid" and $sequencing_type ne "illumina") {
-	print "Bad value for seq-type: $sequencing_type.  Possible values are 'solid' or 'illumina'.\n";
+$options{'seq-type'} = lc $options{'seq-type'};
+if ($options{'seq-type'} ne "solid" and $options{'seq-type'} ne "illumina") {
+	print "Bad value for seq-type: ".$options{'seq-type'}.".  Possible values are 'solid' or 'illumina'.\n";
 	exit(0);
 }
 
-# touching the $prep_result_path ensures that we can write to it and that it exists
-eval { touch($prep_result_path) };
+# touching the $options{'prep-result-path'} ensures that we can write to it and that it exists
+eval { touch($options{'prep-result-path'}) };
 if ($@) { croak $@ }
 
 # Run LIMS webservice query
 my %samples;
-if ($no_lims) {
+if ($options{'no-lims'}) {
 	# hack to deal with old Illumina data lacking run IDs
-	%samples = Concordance::Utils->populate_samples_from_csv($run_id_list_path);
+	%samples = Concordance::Utils->populate_samples_from_csv($options{'run-id-list'});
 }
 else {
 	%samples = Concordance::Utils->populate_sample_info_hash(
-		Concordance::Utils->load_runIds_from_file($run_id_list_path));
+		Concordance::Utils->load_runIds_from_file($options{'run-id-list'}));
 }
 
 # Load configuration file
-my %config = new Config::General($config_file_path)->getall;
+my %config = new Config::General($options{'config-path'})->getall;
+
+# combine the config hash and the options hash, write them out for debugging purposes
+my %run_env = %config;
+@run_env{ keys %options } = values %options;
+@run_env{keys %samples } = values %samples;
+Config::General::SaveConfig("/users/p-qc/log/config/config_".POSIX::strftime("%m%d%Y_%H%M%S", localtime).".cfg", \%run_env);
 
 my $samples_ref;
 
-if ($sequencing_type eq "illumina") {
+if ($options{'seq-type'} eq "illumina") {
 print "Running EGtIllPrep...\n";
 	# Illumina eGenotyping concordance preparation
 	my $egtIllPrep = Concordance::EGtIllPrep->new;
 	$egtIllPrep->samples(\%samples);
-	$egtIllPrep->output_txt_path($prep_result_path);
+	$egtIllPrep->output_txt_path($options{'prep-result-path'});
 	$egtIllPrep->execute;
 	$samples_ref = $egtIllPrep->samples;
 }
@@ -127,9 +118,9 @@ else {
 print "Running EGenotypingConcordanceMsub...\n";
 my $ecm = Concordance::EGenotypingConcordanceMsub->new;
 $ecm->config(\%config);
-$ecm->snp_array_dir($SNP_array_directory_path);
-$ecm->probe_list($probelist_path);
-$ecm->sequencing_type($sequencing_type);
+$ecm->snp_array_dir($options{'snp-array-dir'});
+$ecm->probe_list($options{'probelist-path'});
+$ecm->sequencing_type($options{'seq-type'});
 $ecm->samples($samples_ref);
 $ecm->execute;
 
@@ -161,13 +152,13 @@ else {
 # Generate concordance results
 print "Running Judgement...\n";
 my $judgement = Concordance::Judgement->new;
-$judgement->project_name($project_name);
+$judgement->project_name($options{project_name});
 $judgement->output_csv($$."_judgement.csv");
 $judgement->samples($samples_ref);
 $judgement->birdseed_txt_dir(".");
 # make sure the @ in the email address is escaped, otherwise the system call is unhappy
-$results_email_address =~ s/@/\\@/g;
-$judgement->results_email_address($results_email_address);
+$options{'results-email'} =~ s/@/\\@/g;
+$judgement->results_email_address($options{'results-email'});
 $judgement->execute;
 
 =head1 NAME
