@@ -38,6 +38,7 @@ GetOptions (
 	'config-path=s',
 	'seq-type=s',
 	'results-email=s',
+	'job-priority=s',
 	'no-lims',
 	'help|?',
 	'man'
@@ -212,6 +213,10 @@ Specify whether this is SOLiD or Illumina data.
 =item B<--results-email>
 
 Specifiy the [list of] email address, or alias, to send the Judgement results CSV.
+
+=item B<--job-priority>
+
+Specify the job priority (queue) for any Moab submissions, which is set by default to "normal".
 
 =item B<--no-lims>
 
