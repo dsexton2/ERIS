@@ -151,7 +151,7 @@ sub __submit__ {
 	$scheduler->job_name_prefix($sample_id);
 	$scheduler->cores(2);
 	$scheduler->memory(2000);
-	if (defined($self->config->{priority})) { $scheduler->priority($self->config->{priority}) }
+	if (defined($self->config->{'job-priority'})) { $scheduler->priority($self->config->{'job-priority'}) }
 	if (!$self->debug_flag) { $scheduler->execute }
 	
 	$self->dependency_list($scheduler->job_id);

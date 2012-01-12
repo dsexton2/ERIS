@@ -109,7 +109,7 @@ else {
 	# SOLiD eGenotyping concordance preparation
 	# this may call Bam2csfasta if errors are present
 	my $egs = Concordance::EGenoSolid->new;
-	$egs->config(\%config);
+	$egs->config(\%run_env);
 	$egs->samples(\%samples);
 	$egs->execute;
 	$samples_ref = $egs->samples;
@@ -118,7 +118,7 @@ else {
 # Submit concordance analysis jobs to MOAB
 print "Running EGenotypingConcordanceMsub...\n";
 my $ecm = Concordance::EGenotypingConcordanceMsub->new;
-$ecm->config(\%config);
+$ecm->config(\%run_env);
 $ecm->snp_array_dir($options{'snp-array-dir'});
 $ecm->probe_list($options{'probelist-path'});
 $ecm->sequencing_type($options{'seq-type'});

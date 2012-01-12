@@ -176,7 +176,7 @@ sub execute {
 		$scheduler->job_name_prefix($sample->run_id."_".$$."_".int(rand(5000))."_eGeno_concor.job");
 		$scheduler->cores(2);
 		$scheduler->memory(20000);
-		if (defined($self->config->{priority})) { $scheduler->priority($self->config->{priority}) }
+		if (defined($self->config->{'job-priority'})) { $scheduler->priority($self->config->{'job-priority'}) }
 		$scheduler->execute;
 
 		$self->dependency_list($scheduler->job_id);
