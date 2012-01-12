@@ -159,11 +159,10 @@ Iterates on the eGenotyping list provided, and submits the concordance analysis 
 sub execute {
 	my $self = shift;
 	my %samples = %{ $self->samples };
-	my %config = %{ $self->config };
 
 	foreach my $sample (values %samples) {
 		my $command = "\"".
-		$config{"egeno_concordance_script"}." ".
+		$self->config->{"egeno_concordance_script"}." ".
 		$sample->run_id." ".
 		$sample->result_path." ".
 		$self->snp_array_dir." ".
@@ -177,7 +176,7 @@ sub execute {
 		$scheduler->job_name_prefix($sample->run_id."_".$$."_".int(rand(5000))."_eGeno_concor.job");
 		$scheduler->cores(2);
 		$scheduler->memory(20000);
-		$scheduler->priority("normal");
+		if (defined($self->config->{priority})) { $scheduler->priority($self->config->{priority}) }
 		$scheduler->execute;
 
 		$self->dependency_list($scheduler->job_id);
