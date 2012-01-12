@@ -135,14 +135,13 @@ sub __submit__ {
 	my $self = shift;
 	my $sample_id = shift;
 	my $input_bam_file = shift;
-	my %config = %{ $self->config };
 
 	if ($input_bam_file !~ /.bam$/) {
 		print "Bad sample_id/input_bam_file pair: $sample_id\t$input_bam_file\n";
 		next;
 	}
 	(my $output_csfasta_file = $input_bam_file) =~ s/bam$/csfasta/g;
-	my $command = "\"".$config{"java"}." -Xmx2G -jar ".$config{"bam_2_csfasta_jar"}.
+	my $command = "\"".$self->config->{"java"}." -Xmx2G -jar ".$self->config->{"bam_2_csfasta_jar"}.
 		" $input_bam_file".
 		" >".
 		" $output_csfasta_file \"";
@@ -152,7 +151,7 @@ sub __submit__ {
 	$scheduler->job_name_prefix($sample_id);
 	$scheduler->cores(2);
 	$scheduler->memory(2000);
-	$scheduler->priority("normal");
+	if (defined($self->config->{priority})) { $scheduler->priority($self->config->{priority}) }
 	if (!$self->debug_flag) { $scheduler->execute }
 	
 	$self->dependency_list($scheduler->job_id);
