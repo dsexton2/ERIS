@@ -21,9 +21,10 @@ Insert description here.
 
 use strict;
 use warnings;
-use Log::Log4perl;
+use Clone qw(clone);
 use Concordance::Bam2csfasta;
 use File::Touch;
+use Log::Log4perl;
 
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $error_screen = Log::Log4perl->get_logger("errorScreenLogger");
@@ -150,7 +151,7 @@ sub execute {
 					my @bam_files = undef;
 					if ((@bam_files = glob($path."/output/*.bam")) || (@bam_files = glob($path."/*.bam"))) {
 						foreach my $bam_file (@bam_files) {
-							$error_samples{$sample->run_id} = $sample;
+							$error_samples{$sample->run_id} = clone($sample);
 							$error_samples{$sample->run_id}->result_path($bam_file);
 							(my $link = $bam_file) =~ s/bam$/csfasta/;
 							print STDOUT "Linking $file to $link\n";
@@ -195,7 +196,7 @@ sub execute {
 			my @bam_files = undef;
 			if ((@bam_files = glob($path."/output/*.bam")) || (@bam_files = glob($path."/*.bam"))) {
 				foreach my $bam_file (@bam_files) {
-					$error_samples{$sample->run_id} = $sample;
+					$error_samples{$sample->run_id} = clone($sample);
 					$error_samples{$sample->run_id}->result_path($bam_file);
 					(my $link = $bam_file) =~ s/bam$/csfasta/;
 					my $file = $bam_file.".csfasta";
