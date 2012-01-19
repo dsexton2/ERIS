@@ -27,6 +27,7 @@ use diagnostics;
 
 use Carp;
 use Concordance::Utils;
+use Lingua::EN::Numbers::Ordinate;
 use Log::Log4perl;
 
 if (!Log::Log4perl->initialized()) {
@@ -222,6 +223,40 @@ sub __email_report__ {
 	}
 }
 
+=head3 __submit_report_to_LIMS__
+
+ $self->__submit_report_to_LIMS__($hashref);
+
+=cut
+
+sub __submit_report_to_LIMS__ {
+	my $self = shift;
+	my $judgement_hashref = shift;
+
+	foreach my $judgement (values %$judgement_hashref) {
+		my $arg_string = $judgement->{sample}->run_id." ".
+			"EZENOTYPING_FINISHED ";
+		$arg_string .= "SAMPLE_EXTERNAL_ID ".$judgement->{sample}->sample_id." ".
+			"EGENO_AVERAGE_CONCORDANCE ".$judgement->{average}." ".
+			"EGENO_SELF_CONCORDANCE ".$judgement->{self_concordance}." ";
+		my @best_hit_ids = ();
+		my $best_hit_count = 1;
+		foreach my $best_hit_id (sort { $judgement->{concordance_pairs}->{$b} <=> $judgement->{concordance_pairs}->{$a} } (keys %{ $judgement->{concordance_pairs} })) {
+			$arg_string .= "EGENO_".uc(ordinate($best_hit_count))."_BEST_HIT_ID ".$best_hit_id." ".
+				"EGENO_".uc(ordinate($best_hit_count++))."_BEST_HIT_CONCORDANCE ".$judgement->{concordance_pairs}->{$best_hit_id}." ";
+		}
+		# the script expects BEST instead of 1ST_BEST, so replace accordingly
+		$arg_string =~ s/1ST_//g;
+		$arg_string .= "EGENO_SNPS_TESTED ".$judgement->{egeno_snps_tested}." ".
+			"EGENO_SNPS_PASSING_COVERAGE ".$judgement->{egeno_snps_passing_by_coverage}." ".
+			"EGENO_SNPS_PASSING_MATCH ".$judgement->{egeno_snps_passing_match}." ".
+			"PERCENT_CONTAMINATION ".$judgement->{contamination};
+		$debug_log->debug("Args for setIlluminaLaneStatus.pl: ".$arg_string."\n");
+		eval { `perl /users/p-qc/dev_concordance_pipeline/Concordance/setIlluminaLaneStatus.pl $arg_string` };
+		if ($@) { $error_log->error($@."\n") }
+	}
+}
+
 =head3 __build_concordance_hash__
 
  $__build_concordance_hash__($birdseed_txt_file);
@@ -242,8 +277,11 @@ sub __build_concordance_hash__ {
 		my @line_cols = split(/\s+/);
 		$concordance->{$line_cols[0]}->{concordance} = $line_cols[8];
 		if ($#line_cols == 13) {
-			# this is the contamination value
+			# this is the contamination value, and also the self-named SNP row
 			$concordance->{$line_cols[0]}->{contamination} = $line_cols[13];
+			$concordance->{$line_cols[0]}->{egeno_snps_tested} = $line_cols[9];
+			$concordance->{$line_cols[0]}->{egeno_snps_passing_by_coverage} = $line_cols[10];
+			$concordance->{$line_cols[0]}->{egeno_snps_passing_match} = $line_cols[12];
 		}
 	}
 	close(FIN);
@@ -292,6 +330,10 @@ sub __build_prejudgement_hash__ {
 		if (defined($concordance->{$sample->snp_array})) {
 			$prejudgement_hashref->{$sample->run_id}->{self_concordance} = $concordance->{$sample->snp_array}->{concordance};
 			$prejudgement_hashref->{$sample->run_id}->{contamination} = $concordance->{$sample->snp_array}->{contamination};
+			$prejudgement_hashref->{$sample->run_id}->{egeno_snps_tested} = $concordance->{$sample->snp_array}->{egeno_snps_tested};
+			$prejudgement_hashref->{$sample->run_id}->{egeno_snps_passing_by_coverage} = $concordance->{$sample->snp_array}->{egeno_snps_passing_by_coverage};
+			$prejudgement_hashref->{$sample->run_id}->{egeno_snps_passing_match} = $concordance->{$sample->snp_array}->{egeno_snps_passing_match};
+
 		}
 		else {
 			$prejudgement_hashref->{$sample->run_id}->{self_concordance} = "N/A";
@@ -379,6 +421,7 @@ sub __judge__ {
 	$self->__print_summary__(\%judgement_report_information);
 	$self->__print_report__($judgement_hashref);
 	$self->__email_report__;
+	$self->__submit_report_to_LIMS__($judgement_hashref);
 }
 
 1;
