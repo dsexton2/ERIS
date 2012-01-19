@@ -21,36 +21,34 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 my $debug_to_screen = Log::Log4perl->get_logger("debugScreenLogger");
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 
-my $help, my $man;
-my $config_file_path = '';
-my $raw_birdseed_dir = '';
-my $project_name = '';
-my $convert_geno_enc_flag = '';
+my %options = ();
 
-GetOptions
-	(
-		'help|?' => \$help,
-		man => \$man,
-		'config=s' => \$config_file_path, 
-		'raw_bs_dir=s' => \$raw_birdseed_dir,
-		'project=s' => \$project_name,
-		'convert-enc' => \$convert_geno_enc_flag
-	) or pod2usage(1);
+GetOptions (
+	'config=s', 
+	'raw_bs_dir=s',
+	'project=s',
+	'convert-enc=s',
+	'help|?',
+	'man'
+) or pod2usage(1);
 
-pod2usage(1) if $help;
-pod2usage(-exitstatus => 0, -verbose => 2) if $man;
+pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{help});
+pod2usage(-exitstatus => 0, -verbose => 2) if defined($options{man});
 
-pod2usage(-exitstatus => 0, -verbose => 1) if (!$config_file_path or !$raw_birdseed_dir or !$project_name);
+if (!-e $options{'config'}) { croak $options{'config'}.": ".$! }
+if (!-e $options{'raw_bs_dir'}) { croak $options{'raw_bs_dir'}.": ".$! }
 
-if (!-e $config_file_path) { croak $config_file_path.": ".$! }
-if (!-e $raw_birdseed_dir) { croak $raw_birdseed_dir.": ".$! }
+my %config = new Config::General($options{'config'})->getall;
 
-my %config = new Config::General($config_file_path)->getall;
+# combine the config hash and the options hash, write them out for debugging purposes
+my %run_env = %config;
+@run_env{ keys %options } = values %options;
+Config::General::SaveConfig("/users/p-qc/log/config/config_".POSIX::strftime("%m%d%Y_%H%M%S", localtime).".cfg", \%run_env);
 
-if ($convert_geno_enc_flag) {
+if ($options{'convert-enc'}) {
 	print "Converting Illumina genotype encoding to birdseed encoding ... \n";
 	my $convert_geno_enc = Concordance::ConvertRawBirdseedGenotypeEncoding->new;
-	$convert_geno_enc->path($raw_birdseed_dir);
+	$convert_geno_enc->path($options{'raw_bs_dir'});
 	$convert_geno_enc->execute;
 
 	if (defined($convert_geno_enc->dependency_list)) {
@@ -63,8 +61,8 @@ if ($convert_geno_enc_flag) {
 print "Converting raw birdseed files to geli files ... \n";
 my $rbtg = Concordance::RawBsToGeli->new;
 $rbtg->config(\%config);
-$rbtg->raw_birdseed_dir($raw_birdseed_dir);
-$rbtg->project_name($project_name);
+$rbtg->raw_bs_dir($options{'raw_bs_dir'});
+$rbtg->project_name($options{'project'});
 $rbtg->execute;
 
 if (defined($rbtg->dependency_list)) {
@@ -76,7 +74,7 @@ if (defined($rbtg->dependency_list)) {
 print "Converting geli files to bs files ... \n";
 my $gtb = Concordance::GeliToBs->new;
 $gtb->config(\%config);
-$gtb->geli_dir($raw_birdseed_dir);
+$gtb->geli_dir($options{'raw_bs_dir'});
 $gtb->execute;
 
 if (defined($gtb->dependency_list)) {
@@ -87,7 +85,7 @@ if (defined($gtb->dependency_list)) {
 
 print "Converting bs files to birdseed files ... \n";
 my $bs2birdseed = Concordance::Bs2birdseed->new;
-$bs2birdseed->path($raw_birdseed_dir);
+$bs2birdseed->path($options{'raw_bs_dir'});
 $bs2birdseed->execute;
 
 sub wait_for_jobs_to_finish {
