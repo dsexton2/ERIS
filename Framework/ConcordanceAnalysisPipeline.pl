@@ -42,7 +42,7 @@ GetOptions (
 	'no-lims',
 	'help|?',
 	'man'
-);
+) or pod2usage(1);
 
 pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{help});
 pod2usage(-exitstatus => 0, -verbose => 2) if defined($options{man});
