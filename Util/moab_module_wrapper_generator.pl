@@ -20,11 +20,9 @@ pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{help});
 pod2usage(-exitstatus => 0, -verbose => 2) if defined($options{man});
 pod2usage(-exitstatus => 0, -verbose => 1) if scalar keys %options == 0;
 
-(my $script_file_name = "moab_".lc($options{'package-name'}).".pl") =~ s/::/_/g;
-(my $msub_script_file_name = "msub_".lc($options{'package-name'}).".pl") =~ s/::/_/g;
+(my $moab_script_file_name = "moab_".lc($options{'package-name'}).".pl") =~ s/::/_/g;
 
 my $script_src = ""; # script that will be run by msub
-my $msub_script_src = ""; # script that will submit jobs to msub
 
 $script_src = "".
 	"#!/hgsc_software/perl/latest/bin/\n".
@@ -76,10 +74,10 @@ $script_src .= ");\n\n".
 # generate perldoc
 $script_src .= "=head1 NAME\n".
 	"\n".
-	"B<$script_file_name> - msub wrapper script for class ".$options{'package-name'}."\n".
+	"B<$moab_script_file_name> - moab wrapper script for class ".$options{'package-name'}."\n".
 	"\n".
 	"=head1 SYNOPSIS\n\n".
-	"B<$script_file_name>";
+	"B<$moab_script_file_name>";
 
 for my $attribute ( $meta->get_all_attributes ) {
 	$script_src .= " [--".$attribute->name."=".$attribute->type_constraint->name."]";
@@ -111,9 +109,14 @@ $script_src .= "=item B<--help|?>\n\n".
 	"GPLv3\n\n".
 	"=head1 AUTHOR\n\n".
 	"John McAdams - L<mailto:mcadams\@bcm.edu>\n\n".
-	"=cut\n\n".
-	"1;";
+	"=cut\n\n";
 
-open(FOUT_WRAPPER_SCRIPT, ">".$script_file_name) or die $!;
+open(FOUT_WRAPPER_SCRIPT, ">".$moab_script_file_name) or die $!;
 print FOUT_WRAPPER_SCRIPT $script_src."\n";
 close(FOUT_WRAPPER_SCRIPT) or warn $!;
+
+=head1 NAME
+
+B<moab_module_wrapper_generator> - generate a script to run a module from Moab
+
+=head1 SYNOPSIS
