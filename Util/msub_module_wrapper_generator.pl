@@ -11,7 +11,7 @@ my %options = ();
 
 GetOptions(
 	\%options,
-	'package-name=s',
+	'module-name=s',
 	'help|?',
 	'man'
 );
@@ -20,7 +20,7 @@ pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{help});
 pod2usage(-exitstatus => 0, -verbose => 2) if defined($options{man});
 pod2usage(-exitstatus => 0, -verbose => 1) if scalar keys %options == 0;
 
-(my $msub_script_file_name = "msub_".lc($options{'package-name'}).".pl") =~ s/::/_/g;
+(my $msub_script_file_name = "msub_".lc($options{'module-name'}).".pl") =~ s/::/_/g;
 
 my $script_src = ""; # script that will be run by msub
 
@@ -31,7 +31,7 @@ $script_src = "".
 	"use warnings;\n".
 	"use diagnostics;\n".
 	"\n".
-	"use ".$options{'package-name'}.";\n".
+	"use ".$options{'module-name'}.";\n".
 	"use Concordance::Common::Scheduler;\n".
 	"use Getopt::Long;\n".
 	"use Pod::Usage;\n".
@@ -45,7 +45,7 @@ my %moose_to_getoptlong_type_mapping = (
 	'Num' => 'i'
 );
 
-my $meta  = $options{'package-name'}->meta;
+my $meta  = $options{'module-name'}->meta;
 
 $script_src .= "GetOptions(\n\t\\%options,\n";
 
@@ -85,7 +85,7 @@ $script_src .= "my \$scheduler = Concordance::Common::Scheduler->new;\n".
 # generate perldoc
 $script_src .= "\n=head1 NAME\n".
 	"\n".
-	"B<$msub_script_file_name> - msub wrapper script for class ".$options{'package-name'}."\n".
+	"B<$msub_script_file_name> - msub wrapper script for class ".$options{'module-name'}."\n".
 	"\n".
 	"=head1 SYNOPSIS\n\n".
 	"B<$msub_script_file_name>";
@@ -128,7 +128,7 @@ $script_src .= "=item B<--help|?>\n\n".
 	"=back\n\n".
 	"=head1 DESCRIPTION\n\n".
 	"This is an automatically generated script to allow jobs to be submitted to ".
-	"Moab utilizing the ".$options{'package-name'}." module.\n\n".
+	"Moab utilizing the ".$options{'module-name'}." module.\n\n".
 	"=head1 LICENSE\n\n".
 	"GPLv3\n\n".
 	"=head1 AUTHOR\n\n".
@@ -138,3 +138,49 @@ $script_src .= "=item B<--help|?>\n\n".
 open(FOUT_WRAPPER_SCRIPT, ">".$msub_script_file_name) or die $!;
 print FOUT_WRAPPER_SCRIPT $script_src."\n";
 close(FOUT_WRAPPER_SCRIPT) or warn $!;
+
+=head1 NAME
+
+B<msub_module_wrapper_generator> - generate a script to sumbmit to moab a module wrapper script
+
+=head1 SYNOPSIS
+
+perl -mFully::Qualified::Module B<msub_module_wrapper_generator.pl> - [--module-name=Fully::Qualified::Module] [--help|?] [--man]
+
+Options:
+
+ --module-name	The fully qualifed module for which to generate an msub wrapper script
+ --help|?	Prints a brief help message
+ --man		Prints an extended help message
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--module-name>
+
+The fully qualifed module for which to generate an msub wrapper script.
+
+=item B<--help|?>
+
+Prints a brief help message.
+
+=item B<--man>
+
+Prints an extended help message.
+
+=back
+
+=head1 DESCRIPTION
+
+B<msub_module_wrapper_generator> generates a wrapper script to submit a moab module wrapper script, which instantiates and executes a module.  This is intended to allow for discrete functional units to be written in an OO style while providing an automated way to run them as scripts on the cluster.  This leverages Moose's introspection abilities to automatically generate scripts that require arguments matching the class fields.
+
+=head1 LICENSE
+
+GPLv3
+
+=head1 AUTHOR
+
+John McAdams - (mcadams@bcm.edu)
+
+=cut
