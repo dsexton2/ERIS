@@ -213,7 +213,12 @@ Private method to email the CSV containing the results of the concordance judgem
 
 sub __email_report__ {
 	my $self = shift;
+	if (!-e $self->output_csv) {
+		carp "Failed to email report - problem finding CSV file ".$self->output_csv."\n";
+		return;
+	}
 	if (!defined($self->{results_email_address})) {
+		carp "Failed to email report - no email address(es) provided\n";
 		return;
 	}
 	eval { system("echo \"$self->{project_name} Concordance Judgement Results\" | mutt -a $self->{output_csv} -s \"$self->{project_name} Concordance Judgement Results\" $self->{results_email_address}") };
@@ -238,7 +243,8 @@ sub __submit_report_to_LIMS__ {
 			"EZENOTYPING_FINISHED ";
 		$arg_string .= "SAMPLE_EXTERNAL_ID ".$judgement->{sample}->sample_id." ".
 			"EGENO_AVERAGE_CONCORDANCE ".$judgement->{average}." ".
-			"EGENO_SELF_CONCORDANCE ".$judgement->{self_concordance}." ";
+			"EGENO_SELF_CONCORDANCE ".$judgement->{self_concordance}." ".
+			"EGENO_STATE ".$judgement->{judgement_state}." ";
 		my @best_hit_ids = ();
 		my $best_hit_count = 1;
 		foreach my $best_hit_id (sort { $judgement->{concordance_pairs}->{$b} <=> $judgement->{concordance_pairs}->{$a} } (keys %{ $judgement->{concordance_pairs} })) {
