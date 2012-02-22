@@ -18,7 +18,7 @@ has 'birdseed_path' => (
 	is  => 'rw',
 	isa => 'Path',
 	required => 1,
-	documentation => "The path to the birdseed file or directory on which to perform alignment",
+	documentation => "The path to the birdseed file or directory of files on which to perform alignment",
 );
 
 has 'probelist_path' => (
