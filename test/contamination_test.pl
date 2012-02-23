@@ -14,11 +14,11 @@ use Config::General;
 # csfasta. 
 
 if (scalar @ARGV != 4) {
-	die "USAGE: perl contamination_test.pl run_id_contamination_target ".
-	"/path/to/contamination/source/file ".
-	"/path/to/snp/array/dir ".
-	"/path/to/probelist/file ".
-	"\n";
+    die "USAGE: perl contamination_test.pl run_id_contamination_target ".
+    "/path/to/contamination/source/file ".
+    "/path/to/snp/array/dir ".
+    "/path/to/probelist/file ".
+    "\n";
 }
 
 my $run_id_contamination_target = $ARGV[0];
@@ -36,8 +36,8 @@ if (!-e $contamination_source_file) { die "$contamination_source_file DNE\n" }
 
 my %sample_contamination_target = Concordance::Utils->populate_sample_info_hash($run_id_contamination_target);
 if (scalar keys %sample_contamination_target == 0) {
-	print "LIMS query returned nothing for run ID $run_id_contamination_target\n"; 
-	exit;
+    print "LIMS query returned nothing for run ID $run_id_contamination_target\n"; 
+    exit;
 }
 
 # EGenoSolid prep to get the CSFASTA path
@@ -50,32 +50,32 @@ $egs->execute;
 # make several new CSFASTA files, based on directions above
 # test1: 0.1% (318,000)
 foreach my $test_threshold (@test_thresholds) {
-	print "Setting up test for test threshold $test_threshold ...\n";
-	my $contaminated_csfasta_file = $working_dir."test_".$test_threshold.".csfasta";
-	eval { open(FIN, $contamination_source_file) };
-	if ($@) {
-		print "Failed to open ".$contamination_source_file." for reading: $@\n";
-		next;
-	}
-	print "Copying ".$sample_contamination_target{$run_id_contamination_target}->result_path." to ".$contaminated_csfasta_file. " ...\n";
-	eval { copy($sample_contamination_target{$run_id_contamination_target}->result_path, $contaminated_csfasta_file) };
-	if ($@) {
-		print "Failed to copy ".$sample_contamination_target{$run_id_contamination_target}->result_path." to ".$contaminated_csfasta_file.": $@\n";
-		next;
-	}
-	eval { open(FOUT, ">>".$contaminated_csfasta_file) };
-	if ($@) {
-		print "Failed to open ".$contaminated_csfasta_file." for writing: $@\n";
-		next;
-	}
-	while ($test_threshold > 0) {
-		my $line = <FIN>;
-		print FOUT $line; 
-		$test_threshold--;
-	}
-	close(FIN) or warn $!;
-	close(FOUT) or warn $!;
-	push @csfasta_files, $contaminated_csfasta_file;
+    print "Setting up test for test threshold $test_threshold ...\n";
+    my $contaminated_csfasta_file = $working_dir."test_".$test_threshold.".csfasta";
+    eval { open(FIN, $contamination_source_file) };
+    if ($@) {
+        print "Failed to open ".$contamination_source_file." for reading: $@\n";
+        next;
+    }
+    print "Copying ".$sample_contamination_target{$run_id_contamination_target}->result_path." to ".$contaminated_csfasta_file. " ...\n";
+    eval { copy($sample_contamination_target{$run_id_contamination_target}->result_path, $contaminated_csfasta_file) };
+    if ($@) {
+        print "Failed to copy ".$sample_contamination_target{$run_id_contamination_target}->result_path." to ".$contaminated_csfasta_file.": $@\n";
+        next;
+    }
+    eval { open(FOUT, ">>".$contaminated_csfasta_file) };
+    if ($@) {
+        print "Failed to open ".$contaminated_csfasta_file." for writing: $@\n";
+        next;
+    }
+    while ($test_threshold > 0) {
+        my $line = <FIN>;
+        print FOUT $line; 
+        $test_threshold--;
+    }
+    close(FIN) or warn $!;
+    close(FOUT) or warn $!;
+    push @csfasta_files, $contaminated_csfasta_file;
 }
 
 # submit to Moab jobs to generate contamination calculation for each of the CSFASTA files
@@ -87,8 +87,8 @@ $ecm->probe_list($probe_list_path);
 $ecm->sequencing_type("solid");
 $ecm->config(\%config);
 foreach my $csfasta_file (@csfasta_files) {
-	$sample_contamination_target{$run_id_contamination_target}->run_id((shift @test_thresholds));
-	$sample_contamination_target{$run_id_contamination_target}->result_path($csfasta_file);
-	$ecm->samples(\%sample_contamination_target);
-	$ecm->execute;
+    $sample_contamination_target{$run_id_contamination_target}->run_id((shift @test_thresholds));
+    $sample_contamination_target{$run_id_contamination_target}->result_path($csfasta_file);
+    $ecm->samples(\%sample_contamination_target);
+    $ecm->execute;
 }

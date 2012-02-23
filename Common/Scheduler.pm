@@ -27,7 +27,7 @@ use Cwd;
 use Log::Log4perl;
 
 if (!Log::Log4perl->initialized()) { 
-	Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");
+    Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");
 }
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -41,16 +41,16 @@ Returns a new Scheduler instance object.
 =cut
 
 sub new {
-	my $self = {};
-	$self->{command} = "";
-	$self->{job_name_prefix} = "";
-	$self->{cores} = 0;
-	$self->{memory} = 0;
-	$self->{priority} = "normal";
-	$self->{dependency_list} = "";
-	$self->{job_id} = "";
-	bless $self;
-	return $self;
+    my $self = {};
+    $self->{command} = "";
+    $self->{job_name_prefix} = "";
+    $self->{cores} = 0;
+    $self->{memory} = 0;
+    $self->{priority} = "normal";
+    $self->{dependency_list} = "";
+    $self->{job_id} = "";
+    bless $self;
+    return $self;
 }
 
 =head3 command
@@ -62,9 +62,9 @@ Gets and sets the command to be submitted.
 =cut
 
 sub command {
-	my $self = shift;
-	if (@_) { $self->{command} = shift }
-	return $self->{command};
+    my $self = shift;
+    if (@_) { $self->{command} = shift }
+    return $self->{command};
 }
 
 =head3 job_name_prefix
@@ -76,9 +76,9 @@ Gets and sets the job name prefix, which will be used compose the job name and n
 =cut
 
 sub job_name_prefix {
-	my $self = shift;
-	if (@_) { $self->{job_name_prefix} = shift }
-	return $self->{job_name_prefix};
+    my $self = shift;
+    if (@_) { $self->{job_name_prefix} = shift }
+    return $self->{job_name_prefix};
 }
 
 =head3 cores
@@ -90,9 +90,9 @@ Gets and sets the number of cores to utilize.
 =cut
 
 sub cores {
-	my $self = shift;
-	if (@_) { $self->{cores} = shift }
-	return $self->{cores};
+    my $self = shift;
+    if (@_) { $self->{cores} = shift }
+    return $self->{cores};
 }
 
 =head3 memory
@@ -104,9 +104,9 @@ Gets and sets the amount of memory (in MB) to utilize.
 =cut
 
 sub memory {
-	my $self = shift;
-	if (@_) { $self->{memory} = shift }
-	return $self->{memory};
+    my $self = shift;
+    if (@_) { $self->{memory} = shift }
+    return $self->{memory};
 }
 
 =head3 priority
@@ -118,9 +118,9 @@ Gets and sets the job priority status; default is 'normal'.
 =cut
 
 sub priority {
-	my $self = shift;
-	if (@_) { $self->{priority} = shift }
-	return $self->{priority};
+    my $self = shift;
+    if (@_) { $self->{priority} = shift }
+    return $self->{priority};
 }
 
 =head3 dependency_list
@@ -134,9 +134,9 @@ job IDs are appended to the class member to form a comma-delimited list.
 =cut
 
 sub dependency_list {
-	my $self = shift;
-	if (@_) { $self->{dependency_list} = shift }
-	return $self->{dependency_list};
+    my $self = shift;
+    if (@_) { $self->{dependency_list} = shift }
+    return $self->{dependency_list};
 }
 
 =head3 job_id
@@ -148,9 +148,9 @@ Gets and sets the job ID, which is obtained from the output of the msub submissi
 =cut
 
 sub job_id {
-	my $self = shift;
-	if (@_) { $self->{job_id} = shift }
-	return $self->{job_id};
+    my $self = shift;
+    if (@_) { $self->{job_id} = shift }
+    return $self->{job_id};
 }
 
 =head3 __build_job_name__
@@ -162,9 +162,9 @@ Private method to compose the job name using the job prefix, the PID, and a rand
 =cut
 
 sub __build_job_name__ {
-	my $self = shift;
-	my $job_name = $self->job_name_prefix."_".$$."_".int(rand(5000));
-	return $job_name;
+    my $self = shift;
+    my $job_name = $self->job_name_prefix."_".$$."_".int(rand(5000));
+    return $job_name;
 }
 
 =head3 __build_command__
@@ -176,25 +176,25 @@ Private method to build the command to submit via msub.
 =cut
 
 sub __build_command__ {
-	my $self = shift;
-	if ($self->command !~ m/^".*"$/) { $self->command("\"".$self->command."\"") }
-	my $cmd = "echo ".$self->command." | ".
-		"msub -N ".$self->__build_job_name__." ".
-		"-o ".$self->job_name_prefix.".o ".
-		"-e ".$self->job_name_prefix.".e ".
-		"-q ".$self->priority." ".
-		"-d ".getcwd()." ";
-		if ($self->dependency_list ne "") {
-			# ensure this list starts with a colon
-			if ($self->dependency_list !~ m/^:/) {
-				$self->dependency_list(":".$self->dependency_list);
-			}
-			$cmd .= " -l depend=afterok".$self->dependency_list;
-		}
-		$cmd .= " -l nodes=1:ppn=".$self->cores.",mem=".$self->memory."mb";
-	$debug_log->debug($cmd);
-	print $cmd."\n";
-	return $cmd;
+    my $self = shift;
+    if ($self->command !~ m/^".*"$/) { $self->command("\"".$self->command."\"") }
+    my $cmd = "echo ".$self->command." | ".
+        "msub -N ".$self->__build_job_name__." ".
+        "-o ".$self->job_name_prefix.".o ".
+        "-e ".$self->job_name_prefix.".e ".
+        "-q ".$self->priority." ".
+        "-d ".getcwd()." ";
+        if ($self->dependency_list ne "") {
+            # ensure this list starts with a colon
+            if ($self->dependency_list !~ m/^:/) {
+                $self->dependency_list(":".$self->dependency_list);
+            }
+            $cmd .= " -l depend=afterok".$self->dependency_list;
+        }
+        $cmd .= " -l nodes=1:ppn=".$self->cores.",mem=".$self->memory."mb";
+    $debug_log->debug($cmd);
+    print $cmd."\n";
+    return $cmd;
 }
 
 =head3 execute
@@ -208,15 +208,15 @@ list.
 =cut
 
 sub execute {
-	$self = shift;
-	#system($self->__build_command__);
-	my $cmd = $self->__build_command__;
-	my $output = `$cmd`;
+    $self = shift;
+    #system($self->__build_command__);
+    my $cmd = $self->__build_command__;
+    my $output = `$cmd`;
 
-	if ($? == 0) {
-		$output =~ m/(\d+)/;
-		$self->job_id($1);
-	}
+    if ($? == 0) {
+        $output =~ m/(\d+)/;
+        $self->job_id($1);
+    }
 }
 
 =head1 LICENSE

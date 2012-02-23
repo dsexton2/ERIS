@@ -43,13 +43,13 @@ Returns a new instance of this module.
 =cut
 
 sub new {
-	my $self = {};
-	$self->{egeno_list} = undef;
-	$self->{snp_array} = undef;
-	$self->{script_path} = undef;
-	$self->{debug_flag} = 0;
-	bless($self);
-	return $self;
+    my $self = {};
+    $self->{egeno_list} = undef;
+    $self->{snp_array} = undef;
+    $self->{script_path} = undef;
+    $self->{debug_flag} = 0;
+    bless($self);
+    return $self;
 }
 
 =head3 egeno_list
@@ -62,9 +62,9 @@ Accessor/mutator for the list of run IDs and their associated result files.
 =cut
 
 sub egeno_list {
-	my $self = shift;
-	if (@_) { $self->{egeno_list} = shift }
-	return $self->{egeno_list};
+    my $self = shift;
+    if (@_) { $self->{egeno_list} = shift }
+    return $self->{egeno_list};
 }
 
 =head3 snp_array
@@ -77,9 +77,9 @@ Accessor/mutator for the SNP array directory.
 =cut
 
 sub snp_array {
-	my $self = shift;
-	if (@_) { $self->{snp_array} = shift }
-	return $self->{snp_array};
+    my $self = shift;
+    if (@_) { $self->{snp_array} = shift }
+    return $self->{snp_array};
 }
 
 =head3 script_path
@@ -92,9 +92,9 @@ Accessor/mutator for the path to the perl script used to prepare the Illumina da
 =cut
 
 sub script_path {
-	my $self = shift;
-	if (@_) { $self->{script_path} = shift }
-	return $self->{script_path};
+    my $self = shift;
+    if (@_) { $self->{script_path} = shift }
+    return $self->{script_path};
 }
 
 =head3 debug_flag
@@ -107,9 +107,9 @@ Accessor/mutator for the debug flag, which controls whether certain commands (su
 =cut
 
 sub debug_flag {
-	my $self = shift;
-	if (@_) { $self->{debug_flag} = shift }
-	return $self->{debug_flag};
+    my $self = shift;
+    if (@_) { $self->{debug_flag} = shift }
+    return $self->{debug_flag};
 }
 
 =head3 execute
@@ -121,27 +121,27 @@ This processes the C<egeno_list> and submits the jobs, which execute using the C
 =cut
 
 sub execute {
-	my $self = shift;
+    my $self = shift;
 
-	if (!-e $self->egeno_list) {
-		$error_log->error("Egeno_list file DNE: ".$self->egeno_list."\n");
-		croak "Egeno_list file DNE: ".$self->egeno_list."\n";
-	}
+    if (!-e $self->egeno_list) {
+        $error_log->error("Egeno_list file DNE: ".$self->egeno_list."\n");
+        croak "Egeno_list file DNE: ".$self->egeno_list."\n";
+    }
 
-	open(FIN, $self->egeno_list) or croak $!;
-	while(<FIN>) {
-		chomp;
-		my $command = $self->script_path." ".join('#', (split(/\s+/)));
+    open(FIN, $self->egeno_list) or croak $!;
+    while(<FIN>) {
+        chomp;
+        my $command = $self->script_path." ".join('#', (split(/\s+/)));
 
-		my $scheduler = Concordance::Common::Scheduler->new;
-		$scheduler->command($command);
-		$scheduler->job_name_prefix($$."_".rand(5000)."-eGT-".$self->SNP_array);
-		$scheduler->cores(2);
-		$scheduler->memory(2000);
-		$scheduler->priority("normal");
-		if (!$self->debug_flag) { $scheduler->execute }
-	}
-	close(FIN) or carp $!;
+        my $scheduler = Concordance::Common::Scheduler->new;
+        $scheduler->command($command);
+        $scheduler->job_name_prefix($$."_".rand(5000)."-eGT-".$self->SNP_array);
+        $scheduler->cores(2);
+        $scheduler->memory(2000);
+        $scheduler->priority("normal");
+        if (!$self->debug_flag) { $scheduler->execute }
+    }
+    close(FIN) or carp $!;
 }
 
 1;

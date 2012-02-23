@@ -43,15 +43,15 @@ Creates a new Concordance::EGenotyping instance.
 =cut
 
 sub new {
-	my $self = {};
-	$self->{snp_array_dir} = undef;
-	$self->{probe_list} = undef;
-	$self->{sequencing_type} = undef;
-	$self->{dependency_list} = undef;
-	$self->{samples} = undef;
-	$self->{config} = undef;
-	bless($self);
-	return $self;
+    my $self = {};
+    $self->{snp_array_dir} = undef;
+    $self->{probe_list} = undef;
+    $self->{sequencing_type} = undef;
+    $self->{dependency_list} = undef;
+    $self->{samples} = undef;
+    $self->{config} = undef;
+    bless($self);
+    return $self;
 }
 
 =head3 snp_array_dir
@@ -63,9 +63,9 @@ Gets and sets the directory name in which the birdseed files (SNP arrays) are lo
 =cut
 
 sub snp_array_dir {
-	my $self = shift;
-	if (@_) { $self->{snp_array_dir} = shift }
-	return $self->{snp_array_dir}; #[^\0]+
+    my $self = shift;
+    if (@_) { $self->{snp_array_dir} = shift }
+    return $self->{snp_array_dir}; #[^\0]+
 }
 
 =head3 probe_list
@@ -77,9 +77,9 @@ Gets and sets the path to the probe list.
 =cut
 
 sub probe_list {
-	my $self = shift;
-	if (@_) { $self->{probe_list} = shift }
-	return $self->{probe_list}; #[^\0]+
+    my $self = shift;
+    if (@_) { $self->{probe_list} = shift }
+    return $self->{probe_list}; #[^\0]+
 }
 
 =head3 sequencing_type
@@ -91,9 +91,9 @@ Gets and sets the sequencing type, e.g. solid or illumina.
 =cut
 
 sub sequencing_type {
-	my $self = shift;
-	if (@_) { $self->{sequencing_type} = shift }
-	return $self->{sequencing_type}; #[^\0]+
+    my $self = shift;
+    if (@_) { $self->{sequencing_type} = shift }
+    return $self->{sequencing_type}; #[^\0]+
 }
 
 =head3 dependency_list
@@ -108,16 +108,16 @@ what msub expects.
 =cut
 
 sub dependency_list {
-	my $self = shift;
-	if (@_) {
-		if (!defined($self->{dependency_list})) {
-			$self->{dependency_list} = shift;
-		}
-		else {
-			$self->{dependency_list} .= ":".shift
-		}
-	}
-	return $self->{dependency_list};
+    my $self = shift;
+    if (@_) {
+        if (!defined($self->{dependency_list})) {
+            $self->{dependency_list} = shift;
+        }
+        else {
+            $self->{dependency_list} .= ":".shift
+        }
+    }
+    return $self->{dependency_list};
 }
 
 =head3 samples
@@ -129,9 +129,9 @@ Gets and sets a hash reference to the Samples container.
 =cut
 
 sub samples {
-	my $self = shift;
-	if (@_) { $self->{samples} = shift }
-	return $self->{samples};
+    my $self = shift;
+    if (@_) { $self->{samples} = shift }
+    return $self->{samples};
 }
 
 =head3 config
@@ -143,9 +143,9 @@ Gets and sets the hash reference to the configuration hash.
 =cut
 
 sub config {
-	my $self = shift;
-	if (@_) { $self->{config} = shift }
-	return $self->{config};
+    my $self = shift;
+    if (@_) { $self->{config} = shift }
+    return $self->{config};
 }
 
 =head3 execute
@@ -157,32 +157,32 @@ Iterates on the eGenotyping list provided, and submits the concordance analysis 
 =cut
 
 sub execute {
-	my $self = shift;
-	my %samples = %{ $self->samples };
+    my $self = shift;
+    my %samples = %{ $self->samples };
 
-	foreach my $sample (values %samples) {
-		my $command = "\"".
-		$self->config->{"egeno_concordance_script"}." ".
-		$sample->run_id." ".
-		$sample->result_path." ".
-		$self->snp_array_dir." ".
-		$self->probe_list." ".
-		$self->sequencing_type." ".
-		$sample->snp_array." ".
-		"\"";
+    foreach my $sample (values %samples) {
+        my $command = "\"".
+        $self->config->{"egeno_concordance_script"}." ".
+        $sample->run_id." ".
+        $sample->result_path." ".
+        $self->snp_array_dir." ".
+        $self->probe_list." ".
+        $self->sequencing_type." ".
+        $sample->snp_array." ".
+        "\"";
 
-		my $scheduler = Concordance::Common::Scheduler->new;
-		$scheduler->command($command);
-		$scheduler->job_name_prefix($sample->run_id."_".$$."_".int(rand(5000))."_eGeno_concor.job");
-		$scheduler->cores(2);
-		$scheduler->memory(20000);
-		if (defined($self->config->{'job-priority'})) { $scheduler->priority($self->config->{'job-priority'}) }
-		$scheduler->execute;
+        my $scheduler = Concordance::Common::Scheduler->new;
+        $scheduler->command($command);
+        $scheduler->job_name_prefix($sample->run_id."_".$$."_".int(rand(5000))."_eGeno_concor.job");
+        $scheduler->cores(2);
+        $scheduler->memory(20000);
+        if (defined($self->config->{'job-priority'})) { $scheduler->priority($self->config->{'job-priority'}) }
+        $scheduler->execute;
 
-		$self->dependency_list($scheduler->job_id);
+        $self->dependency_list($scheduler->job_id);
 
-		sleep(5); # msub doesn't like too many submissions at once
-	}
+        sleep(5); # msub doesn't like too many submissions at once
+    }
 }
 
 1;

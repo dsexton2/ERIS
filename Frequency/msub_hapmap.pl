@@ -11,7 +11,7 @@ my $prefrequency_probelist = $ARGV[0];
 my $probelist = $ARGV[1];
 
 my $command = "/users/p-qc/dev_concordance_pipeline/Concordance/Frequency/hapmap.pl ".
-	$prefrequency_probelist." ".$probelist;
+    $prefrequency_probelist." ".$probelist;
 my $job_name = "add_freq_to_probelist";
 
 my $scheduler = Concordance::Common::Scheduler->new;

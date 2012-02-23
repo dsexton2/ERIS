@@ -43,13 +43,13 @@ Returns a new Bam2csfasta instance.
 =cut
 
 sub new {
-	my $self = {};
-	$self->{config} = undef;
-	$self->{samples} = undef;
-	$self->{debug_flag} = 0;
-	$self->{dependency_list} = undef;
-	bless($self);
-	return $self;
+    my $self = {};
+    $self->{config} = undef;
+    $self->{samples} = undef;
+    $self->{debug_flag} = 0;
+    $self->{dependency_list} = undef;
+    bless($self);
+    return $self;
 }
 
 =head3 config
@@ -62,9 +62,9 @@ Gets and sets the hash reference to the configuration items.
 =cut
 
 sub config {
-	my $self = shift;
-	if (@_) { $self->{config} = shift }
-	return $self->{config};
+    my $self = shift;
+    if (@_) { $self->{config} = shift }
+    return $self->{config};
 }
 
 =head3 samples
@@ -77,9 +77,9 @@ Gets and sets the hash reference to the Sample container.
 =cut
 
 sub samples {
-	my $self = shift;
-	if (@_) { $self->{samples} = shift }
-	return $self->{samples};
+    my $self = shift;
+    if (@_) { $self->{samples} = shift }
+    return $self->{samples};
 }
 
 =head3 debug_flag
@@ -93,9 +93,9 @@ information, or to refrain from executing certain methods:
 =cut
 
 sub debug_flag {
-	my $self = shift;
-	if (@_) { $self->{debug_flag} = shift }
-	return $self->{debug_flag};
+    my $self = shift;
+    if (@_) { $self->{debug_flag} = shift }
+    return $self->{debug_flag};
 }
 
 =head3 dependency_list
@@ -110,16 +110,16 @@ what msub expects.
 =cut
 
 sub dependency_list {
-	my $self = shift;
-	if (@_) {
-		if (!defined($self->{dependency_list})) {
-			$self->{dependency_list} = shift;
-		}
-		else {
-			$self->{dependency_list} .= ":".shift
-		}
-	}
-	return $self->{dependency_list};
+    my $self = shift;
+    if (@_) {
+        if (!defined($self->{dependency_list})) {
+            $self->{dependency_list} = shift;
+        }
+        else {
+            $self->{dependency_list} .= ":".shift
+        }
+    }
+    return $self->{dependency_list};
 }
 
 =head3 __submit__
@@ -132,29 +132,29 @@ Moab, which generates a CSFASTA file from the requisite BAM file.
 =cut
 
 sub __submit__ {
-	my $self = shift;
-	my $sample_id = shift;
-	my $input_bam_file = shift;
+    my $self = shift;
+    my $sample_id = shift;
+    my $input_bam_file = shift;
 
-	if ($input_bam_file !~ /.bam$/) {
-		print "Bad sample_id/input_bam_file pair: $sample_id\t$input_bam_file\n";
-		next;
-	}
-	(my $output_csfasta_file = $input_bam_file) =~ s/bam$/csfasta/g;
-	my $command = "\"".$self->config->{"java"}." -Xmx2G -jar ".$self->config->{"bam_2_csfasta_jar"}.
-		" $input_bam_file".
-		" >".
-		" $output_csfasta_file \"";
+    if ($input_bam_file !~ /.bam$/) {
+        print "Bad sample_id/input_bam_file pair: $sample_id\t$input_bam_file\n";
+        next;
+    }
+    (my $output_csfasta_file = $input_bam_file) =~ s/bam$/csfasta/g;
+    my $command = "\"".$self->config->{"java"}." -Xmx2G -jar ".$self->config->{"bam_2_csfasta_jar"}.
+        " $input_bam_file".
+        " >".
+        " $output_csfasta_file \"";
 
-	my $scheduler = Concordance::Common::Scheduler->new;
-	$scheduler->command($command);
-	$scheduler->job_name_prefix($sample_id);
-	$scheduler->cores(2);
-	$scheduler->memory(2000);
-	if (defined($self->config->{'job-priority'})) { $scheduler->priority($self->config->{'job-priority'}) }
-	if (!$self->debug_flag) { $scheduler->execute }
-	
-	$self->dependency_list($scheduler->job_id);
+    my $scheduler = Concordance::Common::Scheduler->new;
+    $scheduler->command($command);
+    $scheduler->job_name_prefix($sample_id);
+    $scheduler->cores(2);
+    $scheduler->memory(2000);
+    if (defined($self->config->{'job-priority'})) { $scheduler->priority($self->config->{'job-priority'}) }
+    if (!$self->debug_flag) { $scheduler->execute }
+    
+    $self->dependency_list($scheduler->job_id);
 }
 
 =head3 execute
@@ -169,34 +169,34 @@ accomplished by calling an internal method.
 =cut
 
 sub execute {
-	my $self = shift;
-	my %config = %{ $self->config };
-	my %samples = %{ $self->samples };
-	if (scalar keys %samples != 0) { # Sample objects passed from EGenoSolid
-		foreach my $sample (values %samples) {
-			$self->__submit__($sample->run_id, $sample->result_path);
-		}
-	}
-	if (defined($self->dependency_list)) {
-		my @dependency_list = split(/:/, $self->dependency_list);
-		$debug_log->debug("dependency list: @dependency_list\n");
-		print "Waiting for Bam2csfsta jobs to finish on msub...\n";
-		while (@dependency_list) {
-			foreach my $i (0..$#dependency_list) {
-				my $qstat_info = `qstat $dependency_list[$i]`;
-				if ($qstat_info !~ m/\bR\b/ and $qstat_info !~ m/\bQ\b/) {
-					print "Job ".$dependency_list[$i]." completed.\n";
-					$debug_log->debug("Job ".$dependency_list[$i]." completed.\n");
-					splice (@dependency_list, $i, 1);
-				}
-			}
-			if (scalar @dependency_list > 0) { sleep(600) }
-		}
-	}
-	else {
-		print "Warning: dependency_list undefined.  It's possible that no jobs were submitted\n";
-		$warn_log->warn("Warning: dependency_list undefined.  It's possible that no jobs were submitted\n");
-	}
+    my $self = shift;
+    my %config = %{ $self->config };
+    my %samples = %{ $self->samples };
+    if (scalar keys %samples != 0) { # Sample objects passed from EGenoSolid
+        foreach my $sample (values %samples) {
+            $self->__submit__($sample->run_id, $sample->result_path);
+        }
+    }
+    if (defined($self->dependency_list)) {
+        my @dependency_list = split(/:/, $self->dependency_list);
+        $debug_log->debug("dependency list: @dependency_list\n");
+        print "Waiting for Bam2csfsta jobs to finish on msub...\n";
+        while (@dependency_list) {
+            foreach my $i (0..$#dependency_list) {
+                my $qstat_info = `qstat $dependency_list[$i]`;
+                if ($qstat_info !~ m/\bR\b/ and $qstat_info !~ m/\bQ\b/) {
+                    print "Job ".$dependency_list[$i]." completed.\n";
+                    $debug_log->debug("Job ".$dependency_list[$i]." completed.\n");
+                    splice (@dependency_list, $i, 1);
+                }
+            }
+            if (scalar @dependency_list > 0) { sleep(600) }
+        }
+    }
+    else {
+        print "Warning: dependency_list undefined.  It's possible that no jobs were submitted\n";
+        $warn_log->warn("Warning: dependency_list undefined.  It's possible that no jobs were submitted\n");
+    }
 }
 
 1;

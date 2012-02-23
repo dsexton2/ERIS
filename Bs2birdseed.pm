@@ -22,47 +22,47 @@ use Log::Log4perl;
 use Concordance::Utils;
 
 if (!Log::Log4perl->initialized()) {
-	Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
+    Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
 }
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
 
 sub new {
-	my $self = {};
-	$self->{path} = undef;
-	bless($self);
-	return $self;
+    my $self = {};
+    $self->{path} = undef;
+    bless($self);
+    return $self;
 }
 
 sub path {
-	my $self = shift;
-	if (@_) { $self->{path} = shift; }
-	return $self->{path}; #[^\0]+
+    my $self = shift;
+    if (@_) { $self->{path} = shift; }
+    return $self->{path}; #[^\0]+
 }
 
 sub execute {
-	my $self = shift;
-	my @files = Concordance::Utils->get_file_list($self->path, "bs");
-	my $size = @files;
+    my $self = shift;
+    my @files = Concordance::Utils->get_file_list($self->path, "bs");
+    my $size = @files;
 
-	foreach my $file (@files) {
-		$file =~ /.*\/([^\.]+).*$/;
-		my $outfile=$1.".birdseed";
-		$debug_log->debug("Converting $file to $outfile\n");
-		open(FOUT,"> $outfile");
-		open(FIN,"$file");
-		while (<FIN>) {
-			chomp;
-			if (/^\[/ || /^\@/) {
-				# do nothing
-			} else {
-				my @a=split(/\s+/);
-				print FOUT "$a[0]\t$a[1]\t$a[2]\t$a[5]\n";
-			}
-		}
-		close(FIN);
-		close(FOUT);
-	}
+    foreach my $file (@files) {
+        $file =~ /.*\/([^\.]+).*$/;
+        my $outfile=$1.".birdseed";
+        $debug_log->debug("Converting $file to $outfile\n");
+        open(FOUT,"> $outfile");
+        open(FIN,"$file");
+        while (<FIN>) {
+            chomp;
+            if (/^\[/ || /^\@/) {
+                # do nothing
+            } else {
+                my @a=split(/\s+/);
+                print FOUT "$a[0]\t$a[1]\t$a[2]\t$a[5]\n";
+            }
+        }
+        close(FIN);
+        close(FOUT);
+    }
 }
 
 1;

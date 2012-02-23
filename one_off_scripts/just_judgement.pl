@@ -4,7 +4,7 @@ use Concordance::Utils;
 if (@ARGV == 0) { die "just_judgement.pl <run_ids_file> <project_name> <output_csv> <results_email> <birdseed_txt_dir>\n" }
 
 my %samples = Concordance::Utils->populate_sample_info_hash(
-	Concordance::Utils->load_runIds_from_file($ARGV[0]));
+    Concordance::Utils->load_runIds_from_file($ARGV[0]));
 
 my $judgement = Concordance::Judgement->new;
 $judgement->project_name($ARGV[1]);

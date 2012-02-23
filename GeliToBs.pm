@@ -22,7 +22,7 @@ use Config::General;
 use Log::Log4perl;
 
 if (!Log::Log4perl->initialized()) {
-	Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
+    Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
 }
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -34,12 +34,12 @@ my $debug_log = Log::Log4perl->get_logger("debugLogger");
 =cut
 
 sub new {
-	my $self = {};
-	$self->{config} = undef;
-	$self->{geli_dir} = undef;
-	$self->{dependency_list} = undef;
-	bless($self);
-	return $self;
+    my $self = {};
+    $self->{config} = undef;
+    $self->{geli_dir} = undef;
+    $self->{dependency_list} = undef;
+    bless($self);
+    return $self;
 }
 
 =head3 config
@@ -52,9 +52,9 @@ Gets or sets the hash containing the configuration items.
 =cut
 
 sub config {
-	my $self = shift;
-	if (@_) { $self->{config} = shift }
-	return $self->{config};
+    my $self = shift;
+    if (@_) { $self->{config} = shift }
+    return $self->{config};
 }
 
 =head3
@@ -67,9 +67,9 @@ Gets or sets the path to the directory containing the geli files.
 =cut
 
 sub geli_dir {
-	my $self = shift;
-	if (@_) { $self->{geli_dir} = shift; }
-	return $self->{geli_dir}; #[^\0]+
+    my $self = shift;
+    if (@_) { $self->{geli_dir} = shift; }
+    return $self->{geli_dir}; #[^\0]+
 }
 
 =head3 dependency_list
@@ -84,16 +84,16 @@ what msub expects.
 =cut
 
 sub dependency_list {
-	my $self = shift;
-	if (@_) {
-		if (!defined($self->{dependency_list})) {
-			$self->{dependency_list} = shift;
-		}
-		else {
-			$self->{dependency_list} .= ":".shift
-		}
-	}
-	return $self->{dependency_list};
+    my $self = shift;
+    if (@_) {
+        if (!defined($self->{dependency_list})) {
+            $self->{dependency_list} = shift;
+        }
+        else {
+            $self->{dependency_list} .= ":".shift
+        }
+    }
+    return $self->{dependency_list};
 }
 
 =head3 execute
@@ -105,32 +105,32 @@ Generically named method to kick off processing.
 =cut
 
 sub execute {
-	my $self = shift;
-	my $config = $self->config;
+    my $self = shift;
+    my $config = $self->config;
 
-	my @files = Concordance::Utils->get_file_list($self->geli_dir, "geli");
-	if ($#files == -1) { croak "No geli files in ".$self->geli_dir."\n" }
+    my @files = Concordance::Utils->get_file_list($self->geli_dir, "geli");
+    if ($#files == -1) { croak "No geli files in ".$self->geli_dir."\n" }
 
-	my $cmd = '';
-	foreach my $file (@files) {
-		# build bs file from geli
-		$cmd = "\"".$config->{"java"}." -jar ".
-			$config->{"geli_to_text_extended_jar"}.
-			" OUTPUT_LIKELIHOODS=".$config->{output_likelihoods}.
-			" I=$file".
-			" >& ".
-			" $file.bs \"";
-		$file =~ /.*\/(.*)\.birdseed\.data\.txt\.geli$/;
-		my $scheduler = Concordance::Common::Scheduler->new;
-		$scheduler->command($cmd);
-		$scheduler->job_name_prefix($1."_toBS".$$);
-		$scheduler->cores(2);
-		$scheduler->memory(2000);
-		$scheduler->priority("normal");
-		$scheduler->execute;
+    my $cmd = '';
+    foreach my $file (@files) {
+        # build bs file from geli
+        $cmd = "\"".$config->{"java"}." -jar ".
+            $config->{"geli_to_text_extended_jar"}.
+            " OUTPUT_LIKELIHOODS=".$config->{output_likelihoods}.
+            " I=$file".
+            " >& ".
+            " $file.bs \"";
+        $file =~ /.*\/(.*)\.birdseed\.data\.txt\.geli$/;
+        my $scheduler = Concordance::Common::Scheduler->new;
+        $scheduler->command($cmd);
+        $scheduler->job_name_prefix($1."_toBS".$$);
+        $scheduler->cores(2);
+        $scheduler->memory(2000);
+        $scheduler->priority("normal");
+        $scheduler->execute;
 
-		$self->dependency_list($scheduler->job_id);
-	}
+        $self->dependency_list($scheduler->job_id);
+    }
 }
 
 =head1 LICENSE

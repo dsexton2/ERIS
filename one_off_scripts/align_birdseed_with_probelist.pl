@@ -11,13 +11,13 @@ use Pod::Usage;
 my %options = ();
 
 GetOptions(
-	\%options,
-	'birdseed-dir=s',
-	'probelist-path=s',
-	'rsId-list-path=s',
-	'rsId-col=i',
-	'help|?',
-	'man'
+    \%options,
+    'birdseed-dir=s',
+    'probelist-path=s',
+    'rsId-list-path=s',
+    'rsId-col=i',
+    'help|?',
+    'man'
 );
 
 pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{help});
@@ -32,66 +32,66 @@ if ($options{'rsId-col'} !~ m/\d+/) { die "rsId-col NaN: ".$options{'rsId-list-p
 my $data = {};
 
 open(FIN_PROBELIST, "<".$options{'probelist-path'}) or die $!;
-# 12	71476367	rs11178591	CACCAACTTTGTTAA	TTTATTACTTCTAAT	A	G	0.708624708624708625	0.264957264957264957	0.026418026418026418
+# 12    71476367    rs11178591    CACCAACTTTGTTAA    TTTATTACTTCTAAT    A    G    0.708624708624708625    0.264957264957264957    0.026418026418026418
 while(<FIN_PROBELIST>) {
-	chomp;
-	my @vals_by_col = split(/\t/);
-	$data->{$vals_by_col[2]}->{pl_chr} = $vals_by_col[0];
-	$data->{$vals_by_col[2]}->{pl_chr_pos} = $vals_by_col[1];
-	$data->{$vals_by_col[2]}->{ref_allele} = $vals_by_col[5];
-	$data->{$vals_by_col[2]}->{var_allele} = $vals_by_col[6];
+    chomp;
+    my @vals_by_col = split(/\t/);
+    $data->{$vals_by_col[2]}->{pl_chr} = $vals_by_col[0];
+    $data->{$vals_by_col[2]}->{pl_chr_pos} = $vals_by_col[1];
+    $data->{$vals_by_col[2]}->{ref_allele} = $vals_by_col[5];
+    $data->{$vals_by_col[2]}->{var_allele} = $vals_by_col[6];
 }
 close(FIN_PROBELIST);
 
 open(FIN_RSIDLIST, "<".$options{'rsId-list-path'}) or die $!;
-# 11	rs4127392	0	94010034
+# 11    rs4127392    0    94010034
 while (<FIN_RSIDLIST>) {
-	chomp;
-	my @vals_by_col = split(/\t/);
-	$data->{$vals_by_col[$options{'rsId-col'}]}->{old_chr} = $vals_by_col[0];
-	$data->{$vals_by_col[$options{'rsId-col'}]}->{old_chr_pos} = $vals_by_col[3];
+    chomp;
+    my @vals_by_col = split(/\t/);
+    $data->{$vals_by_col[$options{'rsId-col'}]}->{old_chr} = $vals_by_col[0];
+    $data->{$vals_by_col[$options{'rsId-col'}]}->{old_chr_pos} = $vals_by_col[3];
 }
 close(FIN_RSIDLIST);
 
 my @birdseed_files = glob($options{'birdseed-dir'}."/*.birdseed");
 open(FOUT_ERR, ">>error") or die $!;
 foreach my $birdseed_file (@birdseed_files) {
-	open(FIN_BS, "<".$birdseed_file) or die $!;
-	open(FOUT_CONV_BS, ">".$birdseed_file.".converted.birdseed") or die $!;
-	while (<FIN_BS>) {
-		chomp;
-		# col0 = chr num, col1 = chr pos, col2 = allele, col3 = genotype call
-		my @vals_by_col = split(/\t/);
-		my $genotype_call = pop @vals_by_col;
-		(my $comp_genotype_call = $genotype_call) =~ tr/agctAGCT/tcgaTCGA/;
-		(my $chr, my $chr_pos, my $allele) =  @vals_by_col;
-		$chr =~ s/chr//g;
-		(my $comp_allele = $allele) =~ tr/agctAGCT/tcgaTCGA/;
-		foreach my $value (values %$data) {
-			if ($chr eq $value->{old_chr} and $chr_pos eq $value->{old_chr_pos}) {
-				# find out, based on some arcane formulae, what allele and genotype call to write out
-				if ($allele =~ m/[$value->{'ref_allele'}|$value->{'var_allele'}]/i
-					and $genotype_call =~ m/[$value->{'ref_allele'}|$value->{'var_allele'}]{2}/i) {
-					print FOUT_CONV_BS $value->{pl_chr}."\t".$value->{pl_chr_pos}."\t".$allele."\t".$genotype_call."\n";
-				}
-				elsif ($comp_allele =~ m/[$value->{'ref_allele'}|$value->{'var_allele'}]/i
-					and $comp_genotype_call =~ m/[$value->{'ref_allele'}|$value->{'var_allele'}]{2}/i) {
-					# the birdseed is complemented relative to the probelist; compl
-					print FOUT_CONV_BS $value->{pl_chr}."\t".$value->{pl_chr_pos}."\t".$comp_allele."\t".$comp_genotype_call."\n";
-				}
-				else {
-					# print out lots of happy time error info.  grab the rsId from the map file
-					my $cmd = "grep -wm1 $chr_pos ".$options{'rsId-list-path'};
-					my $rsId = `$cmd`;
-					$rsId =~ s/.*(rs\d+)\t.*/$1/;
-					print FOUT_ERR "rsId: $rsId $_\n";
-					print FOUT_ERR Dumper(\%$value)."\n";
-				}
-			}
-		}
-	}
-	close(FOUT_CONV_BS) or warn $!;
-	close(FIN_BS) or warn $!;
+    open(FIN_BS, "<".$birdseed_file) or die $!;
+    open(FOUT_CONV_BS, ">".$birdseed_file.".converted.birdseed") or die $!;
+    while (<FIN_BS>) {
+        chomp;
+        # col0 = chr num, col1 = chr pos, col2 = allele, col3 = genotype call
+        my @vals_by_col = split(/\t/);
+        my $genotype_call = pop @vals_by_col;
+        (my $comp_genotype_call = $genotype_call) =~ tr/agctAGCT/tcgaTCGA/;
+        (my $chr, my $chr_pos, my $allele) =  @vals_by_col;
+        $chr =~ s/chr//g;
+        (my $comp_allele = $allele) =~ tr/agctAGCT/tcgaTCGA/;
+        foreach my $value (values %$data) {
+            if ($chr eq $value->{old_chr} and $chr_pos eq $value->{old_chr_pos}) {
+                # find out, based on some arcane formulae, what allele and genotype call to write out
+                if ($allele =~ m/[$value->{'ref_allele'}|$value->{'var_allele'}]/i
+                    and $genotype_call =~ m/[$value->{'ref_allele'}|$value->{'var_allele'}]{2}/i) {
+                    print FOUT_CONV_BS $value->{pl_chr}."\t".$value->{pl_chr_pos}."\t".$allele."\t".$genotype_call."\n";
+                }
+                elsif ($comp_allele =~ m/[$value->{'ref_allele'}|$value->{'var_allele'}]/i
+                    and $comp_genotype_call =~ m/[$value->{'ref_allele'}|$value->{'var_allele'}]{2}/i) {
+                    # the birdseed is complemented relative to the probelist; compl
+                    print FOUT_CONV_BS $value->{pl_chr}."\t".$value->{pl_chr_pos}."\t".$comp_allele."\t".$comp_genotype_call."\n";
+                }
+                else {
+                    # print out lots of happy time error info.  grab the rsId from the map file
+                    my $cmd = "grep -wm1 $chr_pos ".$options{'rsId-list-path'};
+                    my $rsId = `$cmd`;
+                    $rsId =~ s/.*(rs\d+)\t.*/$1/;
+                    print FOUT_ERR "rsId: $rsId $_\n";
+                    print FOUT_ERR Dumper(\%$value)."\n";
+                }
+            }
+        }
+    }
+    close(FOUT_CONV_BS) or warn $!;
+    close(FIN_BS) or warn $!;
 }
 close(FOUT_ERR) or warn $!;
 
@@ -105,12 +105,12 @@ B<align_birdseed_with_probelist.pl> [--birdseed-dir=</path/to/birdseed/files>] [
 
 Options:
 
- --birdseed-dir		directory containing birdseed files
- --probelist-path	path to probelist
- --rsId-list-path	path to file containing rsIds
- --rsId-col			zero-indexed rsId column number
- --help|?			prints a brief help message
- --man				prints an extended help message
+ --birdseed-dir        directory containing birdseed files
+ --probelist-path    path to probelist
+ --rsId-list-path    path to file containing rsIds
+ --rsId-col            zero-indexed rsId column number
+ --help|?            prints a brief help message
+ --man                prints an extended help message
 
 =head1 OPTIONS
 

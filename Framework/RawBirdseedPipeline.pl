@@ -15,7 +15,7 @@ use Pod::Usage;
 pod2usage(-exitstatus => 0) if (@ARGV == 0);
 
 if (!Log::Log4perl->initialized()) {
-	Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
+    Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
 }
 my $debug_log = Log::Log4perl->get_logger("debugLogger"); 
 my $debug_to_screen = Log::Log4perl->get_logger("debugScreenLogger");
@@ -24,12 +24,12 @@ my $error_log = Log::Log4perl->get_logger("errorLogger");
 my %options = ();
 
 GetOptions (
-	'config=s', 
-	'raw_bs_dir=s',
-	'project=s',
-	'convert-enc=s',
-	'help|?',
-	'man'
+    'config=s', 
+    'raw_bs_dir=s',
+    'project=s',
+    'convert-enc=s',
+    'help|?',
+    'man'
 ) or pod2usage(1);
 
 pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{help});
@@ -46,16 +46,16 @@ my %run_env = %config;
 Config::General::SaveConfig("/users/p-qc/log/config/config_".POSIX::strftime("%m%d%Y_%H%M%S", localtime).".cfg", \%run_env);
 
 if ($options{'convert-enc'}) {
-	print "Converting Illumina genotype encoding to birdseed encoding ... \n";
-	my $convert_geno_enc = Concordance::ConvertRawBirdseedGenotypeEncoding->new;
-	$convert_geno_enc->path($options{'raw_bs_dir'});
-	$convert_geno_enc->execute;
+    print "Converting Illumina genotype encoding to birdseed encoding ... \n";
+    my $convert_geno_enc = Concordance::ConvertRawBirdseedGenotypeEncoding->new;
+    $convert_geno_enc->path($options{'raw_bs_dir'});
+    $convert_geno_enc->execute;
 
-	if (defined($convert_geno_enc->dependency_list)) {
-		my @dependency_list = split(/:/, $convert_geno_enc->dependency_list);
-		$debug_log->debug("RawBsToGeli dependency list: @dependency_list\n");
-		&wait_for_jobs_to_finish("RawBsToGeli", \@dependency_list);
-	}
+    if (defined($convert_geno_enc->dependency_list)) {
+        my @dependency_list = split(/:/, $convert_geno_enc->dependency_list);
+        $debug_log->debug("RawBsToGeli dependency list: @dependency_list\n");
+        &wait_for_jobs_to_finish("RawBsToGeli", \@dependency_list);
+    }
 }
 
 print "Converting raw birdseed files to geli files ... \n";
@@ -66,9 +66,9 @@ $rbtg->project_name($options{'project'});
 $rbtg->execute;
 
 if (defined($rbtg->dependency_list)) {
-	my @dependency_list = split(/:/, $rbtg->dependency_list);
-	$debug_log->debug("RawBsToGeli dependency list: @dependency_list\n");
-	&wait_for_jobs_to_finish("RawBsToGeli", \@dependency_list);
+    my @dependency_list = split(/:/, $rbtg->dependency_list);
+    $debug_log->debug("RawBsToGeli dependency list: @dependency_list\n");
+    &wait_for_jobs_to_finish("RawBsToGeli", \@dependency_list);
 }
 
 print "Converting geli files to bs files ... \n";
@@ -78,9 +78,9 @@ $gtb->geli_dir($options{'raw_bs_dir'});
 $gtb->execute;
 
 if (defined($gtb->dependency_list)) {
-	my @dependency_list = split(/:/, $gtb->dependency_list);
-	$debug_log->debug("GeliToBs dependency list: @dependency_list\n");
-	&wait_for_jobs_to_finish("GeliToBs", \@dependency_list);
+    my @dependency_list = split(/:/, $gtb->dependency_list);
+    $debug_log->debug("GeliToBs dependency list: @dependency_list\n");
+    &wait_for_jobs_to_finish("GeliToBs", \@dependency_list);
 }
 
 print "Converting bs files to birdseed files ... \n";
@@ -89,21 +89,21 @@ $bs2birdseed->path($options{'raw_bs_dir'});
 $bs2birdseed->execute;
 
 sub wait_for_jobs_to_finish {
-	my $description = shift;
-	my $dependency_list = shift;
+    my $description = shift;
+    my $dependency_list = shift;
 
-	print "Waiting for $description jobs to finish on msub...\n";
+    print "Waiting for $description jobs to finish on msub...\n";
 
-	while (@$dependency_list) {
-		foreach my $i (0..$#$dependency_list) {
-			my $qstat_info = `qstat @$dependency_list[$i]`;
-			if ($qstat_info !~ m/\bR\b/ and $qstat_info !~ m/\bQ\b/) {
-				print "Job ".@$dependency_list[$i]." completed.\n";
-				splice (@$dependency_list, $i, 1);
-			}
-		}
-		if (scalar @$dependency_list > 0) { sleep(600) }
-	}
+    while (@$dependency_list) {
+        foreach my $i (0..$#$dependency_list) {
+            my $qstat_info = `qstat @$dependency_list[$i]`;
+            if ($qstat_info !~ m/\bR\b/ and $qstat_info !~ m/\bQ\b/) {
+                print "Job ".@$dependency_list[$i]." completed.\n";
+                splice (@$dependency_list, $i, 1);
+            }
+        }
+        if (scalar @$dependency_list > 0) { sleep(600) }
+    }
 }
 
 =head1 NAME
@@ -115,12 +115,12 @@ RawBirdseedPipeline - prepare raw birdseed files for concordance analysis
 RawBirdseedPipeline.pl [options] [file ...]
 
 Options:
--config			path to the configuration path
--raw_bs_dir		path to the directory containing the raw birdseed files
--project		the name of the project for these birdseed files
--convert-enc	option to convert genotype encoding
--help			brief help message
--man			full documentation
+-config            path to the configuration path
+-raw_bs_dir        path to the directory containing the raw birdseed files
+-project        the name of the project for these birdseed files
+-convert-enc    option to convert genotype encoding
+-help            brief help message
+-man            full documentation
 
 =head1 OPTIONS
 
