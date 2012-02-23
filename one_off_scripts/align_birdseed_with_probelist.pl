@@ -105,12 +105,12 @@ B<align_birdseed_with_probelist.pl> [--birdseed-dir=</path/to/birdseed/files>] [
 
 Options:
 
- --birdseed-dir        directory containing birdseed files
+ --birdseed-dir      directory containing birdseed files
  --probelist-path    path to probelist
  --rsId-list-path    path to file containing rsIds
- --rsId-col            zero-indexed rsId column number
+ --rsId-col          zero-indexed rsId column number
  --help|?            prints a brief help message
- --man                prints an extended help message
+ --man               prints an extended help message
 
 =head1 OPTIONS
 
@@ -146,13 +146,13 @@ Prints a man page containing detailed usage of this script.
 
 B<align_birdseed_with_probelist> will align a group of birdseed files with a given probelist.
 
-=over 12
+=over 8 
 
 =item 1. Generate probelist file using rsIDs from .map file, pulling lines with matching rsIDs from dbsnp/hg19 master probelist.
 
 =item 2. Get data to match from all three files: 
 
-=over 16
+=over 12
 
 =item a. Match lines from .birdseed to .map using chromosome number and position.
 
