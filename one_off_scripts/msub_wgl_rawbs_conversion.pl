@@ -33,4 +33,5 @@ foreach my $wgl_rawbs_file (@wgl_rawbs_files) {
     $scheduler->memory(2000);
     $scheduler->priority("normal");
     $scheduler->execute;
+    sleep(1);
 }
