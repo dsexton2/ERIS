@@ -72,11 +72,14 @@ for my $attribute ( $meta->get_all_attributes ) {
     $cmd .= "--".$attribute->name."=\".\$options{'".$attribute->name."'}.\" ";
 }
 
-$script_src .= "my \$cmd = $cmd\";\n";
+
+$script_src .= "my \$cmd = $cmd\";\n".
+    "(my \$job_prefix = \$options{'script-path'}) ".
+    "=~ s/.*\\/([^\\/]+)\\.pl/\$1/;\n\n";
 
 $script_src .= "my \$scheduler = Concordance::Common::Scheduler->new;\n".
     "\$scheduler->command(\$cmd);\n".
-    "\$scheduler->job_name_prefix();\n".
+    "\$scheduler->job_name_prefix(\$job_prefix.\"_\".\$\$);\n".
     "\$scheduler->cores(\$options{'cores'});\n".
     "\$scheduler->memory(\$options{'memory-in-mb'});\n".
     "\$scheduler->priority(\$options{'priority'});\n".
