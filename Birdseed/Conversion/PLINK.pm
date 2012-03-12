@@ -35,7 +35,7 @@ has 'tfam_file' => (
 
 sub is_valid_tfam_line {
     my ($self, $tfam_line) = @_;
-    return ( $$tfam_line =~ m/^\d+\s\d+(\s\d){4}$/ );
+    return ( $$tfam_line =~ m/^(.+)\s(.+)(\s\d){4}$/ );
 }
 
 sub is_valid_tped_line {
@@ -94,12 +94,6 @@ sub read_probelist_into_hashref {
     close(FIN_PROBELIST);
 }
 
-# You will need to use our hg 18 and HG 19 probe files to find the ref allele
-# and to make sure that the genotype matches the ref or var allele from the
-# probe file as we have for all the other file conversions.  i.e if the .tped
-# file says the genotype is GG but the probefile says the ref and var are C/T
-# then you would change the genotype to CC in the birdseed file.
-
 sub align_tped_alleles_with_probelist {
     my ($self, $tped_and_probe_data_hashref) = @_;
 
@@ -152,12 +146,6 @@ sub _validate_hash {
     }
     print STDERR "Validated hash ... \n";
 }
-# To make the final birdseed file use the sampleID from the .tfam file as the
-# name of the birdseed file.  Use the rsId from the .tped file to query the
-# probefile.  Use the chromosome, position, and ref allele from the probefile,
-# making sure that the chromosome and position match the .tped file.  Use the
-# genotype from the .tped file but check to make sure that the alleles match
-# the ref and var from the probefile.
 
 sub write_birdseed_file {
     my ( $self, $tped_and_probe_data_hashref ) = @_;
@@ -224,29 +212,19 @@ __PACKAGE__->meta->make_immutable;
 
 1;
 
-
-##############################################################################
-##    Example 7.1 (Recommended) from Chapter 7 of "Perl Best Practices"     ##
-##     Copyright (c) O'Reilly & Associates, 2005. All Rights Reserved.      ##
-##  See: http://www.oreilly.com/pub/a/oreilly/ask_tim/2001/codepolicy.html  ##
-##############################################################################
-
-
-#  Example 7-1. User documentation template for modules
-
 =head1 NAME
- 
+
 Birdseed::Conversion::PLINK - converts PLINK transposed files to birdseed
- 
- 
+
+
 =head1 VERSION
- 
+
 This documentation refers to Concordance::Birdseed::Conversion::PLINK version 
 0.0.1
- 
- 
+
+
 =head1 SYNOPSIS
- 
+
     use Concordance::Birdseed::Conversion::PLINK;
 
     my $plink_converter = Concordance::Birdseed::Conversion::PLINK->new(
@@ -258,182 +236,165 @@ This documentation refers to Concordance::Birdseed::Conversion::PLINK version
   
   
 =head1 DESCRIPTION
- 
+
+TBD.
+
+
+=head1 SUBROUTINES/METHODS 
+
 An object of this class represents a transposed PLINK to Birdseed converter.
 
 =head3 is_valid_tfam_line
 
-Usage       : $self->is_valid_tfam_line(\$tfam_line);
-Purpose     : Checks that the tfam line is in a valid format.
-Returns     : True if the tfam line is valid; false otherwise.
-Parameters  : A scalar reference to a line of tfam data.
-Throws      : No exceptions.
-Comments    : Validates against a regex.
-See Also    : n/a
+ Usage       : $self->is_valid_tfam_line(\$tfam_line);
+ Purpose     : Checks that the tfam line is in a valid format.
+ Returns     : True if the tfam line is valid; false otherwise.
+ Parameters  : A scalar reference to a line of tfam data.
+ Throws      : No exceptions.
+ Comments    : Validates against a regex.
+ See Also    : n/a
 
 =head3 is_valid_tped_line
 
-Usage       : $self->is_valid_tped_line(\$tped_line);
-Purpose     : Checks that the tped line is in a valid format.
-Returns     : True if the tped line is valid; false otherwise.
-Parameters  : A scalar reference to a line of tped data.
-Throws      : No exceptions.
-Comments    : Validates against a regex.
-See Also    : n/a
+ Usage       : $self->is_valid_tped_line(\$tped_line);
+ Purpose     : Checks that the tped line is in a valid format.
+ Returns     : True if the tped line is valid; false otherwise.
+ Parameters  : A scalar reference to a line of tped data.
+ Throws      : No exceptions.
+ Comments    : Validates against a regex.
+ See Also    : n/a
 
 =head3 _translate_numeric_allele_to_letter
 
-Usage       : $self->_translate_numeric_allele_to_letter($array_ref);
-Purpose     : Translate nucleotides from numeric to alphabetic representation.
-Returns     : n/a
-Parameters  : A reference to an array of alleles or genotypes.
-Throws      : No exceptions.
-Comments    : n/a
-See Also    : n/a
+ Usage       : $self->_translate_numeric_allele_to_letter($array_ref);
+ Purpose     : Translate nucleotides from numeric to alphabetic representation.
+ Returns     : n/a
+ Parameters  : A reference to an array of alleles or genotypes.
+ Throws      : No exceptions.
+ Comments    : n/a
+ See Also    : n/a
 
 =head3 parse_tped_line_into_hashref
 
-Usage       : $self->parse_tped_line_into_hashref(\$tped_line, $hashref);
-Purpose     : Extracts data from a tped line into a named hash reference 
-            : whose nested data structure is keyed off of rsID.
-Returns     : n/a
-Parameters  : Scalar reference to a line of tped data; hash reference.
-Throws      : No exceptions.
-Comments    : n/a
-See Also    : n/a
+ Usage       : $self->parse_tped_line_into_hashref(\$tped_line, $hashref);
+ Purpose     : Extracts data from a tped line into a named hash reference 
+             : whose nested data structure is keyed off of rsID.
+ Returns     : n/a
+ Parameters  : Scalar reference to a line of tped data; hash reference.
+ Throws      : No exceptions.
+ Comments    : n/a
+ See Also    : n/a
 
 =head3 read_probelist_into_hashref
 
-Usage       : $self->read_probelist_into_hashref($hashref);
-Purpose     : Extracts data from probelist file into a named hash reference 
-            : whose nested data structure is keyed off of rsID.
-Returns     : n/a
-Parameters  : Hash reference.
-Throws      : No exceptions.
-Comments    : n/a
-See Also    : n/a
+ Usage       : $self->read_probelist_into_hashref($hashref);
+ Purpose     : Extracts data from probelist file into a named hash reference 
+             : whose nested data structure is keyed off of rsID.
+ Returns     : n/a
+ Parameters  : Hash reference.
+ Throws      : No exceptions.
+ Comments    : n/a
+ See Also    : n/a
 
 =head3 align_tped_alleles_with_probelist
 
-Usage       : $self->align_tped_alleles_with_probelist($hashref);
-Purpose     : Aligns the alleles from the tped file against the indicated 
-            : probelist, allowing
-Returns     : 
-Parameters  : 
-Throws      : 
-Comments    : 
-See Also    : 
+ Usage       : $self->align_tped_alleles_with_probelist($hashref);
+ Purpose     : Aligns the alleles from the tped file against the indicated 
+             : probelist, allowing
+ Returns     : n/a
+ Parameters  : Hash reference of tped and probelist data.
+ Throws      : No exceptions.
+ Comments    : n/a
+ See Also    : n/a
 
 =head3 _correlate_chromosome_and_position
 
-Usage       : 
-Purpose     : 
-Returns     : 
-Parameters  : 
-Throws      : 
-Comments    : 
-See Also    : 
+ Usage       : $self->_correlate_chromosome_and_position($hashref);
+ Purpose     : Aligns against the probelist's chromosomes and map locations.
+ Returns     : n/a
+ Parameters  : Hash reference of tped and probelist data.
+ Throws      : No exceptions.
+ Comments    : n/a
+ See Also    : n/a
 
 =head3 _validate_hash
 
-Usage       : 
-Purpose     : 
-Returns     : 
-Parameters  : 
-Throws      : 
-Comments    : 
-See Also    : 
+ Usage       : $self->_validate_hash($hashref);
+ Purpose     : Removes items from the hash with either undefined attributes 
+             : or an empty array of genotype calls.
+ Returns     : n/a
+ Parameters  : Hash reference of tped and probelist data.
+ Throws      : No exceptions.
+ Comments    : n/a
+ See Also    : n/a
 
 =head3 write_birdseed_file
 
-Usage       : 
-Purpose     : 
-Returns     : 
-Parameters  : 
-Throws      : 
-Comments    : 
-See Also    : 
+ Usage       : $self->write_birdseed_file($hashref);
+ Purpose     : Writes a birdseed file out for each sample in the tfam file.
+ Returns     : n/a
+ Parameters  : Hash reference of tped and probelist data.
+ Throws      : No exceptions.
+ Comments    : n/a
+ See Also    : n/a
 
 =head3 execute
 
-Usage       : 
-Purpose     : 
-Returns     : 
-Parameters  : 
-Throws      : 
-Comments    : 
-See Also    : 
+ Usage       : $plink_converter->execute;
+ Purpose     : Method for external calling to kick off the conversion process.
+ Returns     : n/a
+ Parameters  : None.
+ Throws      : No exceptions.
+ Comments    : n/a
+ See Also    : n/a
 
- 
-=head1 SUBROUTINES/METHODS 
- 
-A separate section listing the public components of the module's interface. 
-These normally consist of either subroutines that may be exported, or methods
-that may be called on objects belonging to the classes that the module provides.
-Name the section accordingly.
- 
-In an object-oriented module, this section should begin with a sentence of the 
-form "An object of this class represents...", to give the reader a high-level
-context to help them understand the methods that are subsequently described.
- 
- 
+
 =head1 DIAGNOSTICS
- 
+
 A list of every error and warning message that the module can generate
 (even the ones that will "never happen"), with a full explanation of each 
 problem, one or more likely causes, and any suggested remedies.
-(See also  QUOTE \" " INCLUDETEXT "13_ErrorHandling" "XREF83683_Documenting_Errors_"\! Documenting Errors QUOTE \" " QUOTE " in Chapter "  in Chapter  INCLUDETEXT "13_ErrorHandling" "XREF40477__"\! 13.)
- 
- 
+
+
 =head1 CONFIGURATION AND ENVIRONMENT
- 
+
 A full explanation of any configuration system(s) used by the module,
 including the names and locations of any configuration files, and the
 meaning of any environment variables or properties that can be set. These
 descriptions must also include details of any configuration language used.
-(also see  QUOTE \" " INCLUDETEXT "19_Miscellanea" "XREF40334_Configuration_Files_"\! Configuration Files QUOTE \" " QUOTE " in Chapter "  in Chapter  INCLUDETEXT "19_Miscellanea" "XREF55683__"\! 19.)
- 
- 
+
+
 =head1 DEPENDENCIES
- 
-A list of all the other modules that this module relies upon, including any
-restrictions on versions, and an indication whether these required modules are
-part of the standard Perl distribution, part of the module's distribution,
-or must be installed separately.
- 
- 
+
+=head3 Required modules from the standard Perl distribution
+
+Carp
+
+=head3 Modules that must be installed seperately
+
+Moose
+Moose::Util::TypeConstraints
+
+
 =head1 INCOMPATIBILITIES
- 
-A list of any modules that this module cannot be used in conjunction with.
-This may be due to name conflicts in the interface, or competition for 
-system or program resources, or due to internal limitations of Perl 
-(for example, many modules that use source code filters are mutually 
-incompatible).
- 
- 
+
+N/A
+
+
 =head1 BUGS AND LIMITATIONS
- 
-A list of known problems with the module, together with some indication
-whether they are likely to be fixed in an upcoming release.
- 
-Also a list of restrictions on the features the module does provide: 
-data types that cannot be handled, performance issues and the circumstances
-in which they may arise, practical limitations on the size of data sets, 
-special cases that are not (yet) handled, etc.
- 
-The initial template usually just has:
- 
+
 There are no known bugs in this module. 
-Please report problems to <Maintainer name(s)>  (<contact address>)
+Please report problems to John McAdams  (mcadams@bcm.edu)
 Patches are welcome.
- 
+
+
 =head1 AUTHOR
- 
-<Author name(s)>  (<contact address>)
- 
- 
+
+John McAdams  (mcadams@bcm.edu)
+
+
 =head1 LICENCE AND COPYRIGHT
- 
+
 Copyright (c) 2012 John McAdams (mcadams@bcm.edu). All rights reserved.
 
 This file is part of the Birdseed Conversion and Alignment Suite (BCAS).
