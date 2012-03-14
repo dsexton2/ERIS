@@ -39,6 +39,7 @@ GetOptions (
     'seq-type=s',
     'results-email=s',
     'job-priority=s',
+    'max_cutoff:i',
     'no-lims',
     'help|?',
     'man'
@@ -123,6 +124,11 @@ $ecm->snp_array_dir($options{'snp-array-dir'});
 $ecm->probe_list($options{'probelist-path'});
 $ecm->sequencing_type($options{'seq-type'});
 $ecm->samples($samples_ref);
+# if max_cutoff was supplied, it will be non-zero, as optional args specified
+# as 'i' are defaulted to 0 by Getopt::Long
+if ($options{'max_cutoff'} != 0) {
+    $ecm->max_cutoff($options{'max_cutoff'});
+}
 $ecm->execute;
 
 # get the job IDs of the jobs submitted; we'll want to wait until these complete
