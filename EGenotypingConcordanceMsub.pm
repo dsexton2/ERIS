@@ -50,6 +50,7 @@ sub new {
     $self->{dependency_list} = undef;
     $self->{samples} = undef;
     $self->{config} = undef;
+    $self->{max_cutoff} = 16;
     bless($self);
     return $self;
 }
@@ -148,6 +149,20 @@ sub config {
     return $self->{config};
 }
 
+=head3 max_cutoff
+
+ $scheduler->max_cutoff(16);
+
+Gets and sets the max cutoff for concordance analysis.  Default is 16.
+
+=cut
+
+sub max_cutoff {
+    my $self = shift;
+    if (@_) { $self->{max_cutoff} = shift; }
+    return $self->{max_cutoff};
+}
+
 =head3 execute
 
  $egeno_msub->execute;
@@ -169,6 +184,7 @@ sub execute {
         $self->probe_list." ".
         $self->sequencing_type." ".
         $sample->snp_array." ".
+        $self->max_cutoff." ".
         "\"";
 
         my $scheduler = Concordance::Common::Scheduler->new;
