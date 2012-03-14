@@ -355,7 +355,7 @@ while(<FIN_FREQUENCY_FILE>) {
         }
     }
     $total_num = $ref_num + $alt_num;
-    if($total_num > 4 && $total_num < 16 ) {
+    if($total_num > 4 && $total_num < $max_cutoff ) {
         my $genotype = "";
         if($alt_num < 0.1 * $total_num) {
                 $genotype = $ref_seq.$ref_seq;
