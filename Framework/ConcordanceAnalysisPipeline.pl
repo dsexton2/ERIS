@@ -71,6 +71,13 @@ if ($options{'seq-type'} ne "solid" and $options{'seq-type'} ne "illumina") {
     exit(0);
 }
 
+if ( defined($options{'max-cutoff'}) ) {
+    if ($options{'max-cutoff'} < 16) {
+        croak "max-cutoff must be at least 16";
+        $options{'max-cutoff'} = 16;
+    }
+}
+
 # touching the $options{'prep-result-path'} ensures that we can write to it and that it exists
 eval { touch($options{'prep-result-path'}) };
 if ($@) { croak $@ }
