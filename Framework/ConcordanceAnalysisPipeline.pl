@@ -39,7 +39,7 @@ GetOptions (
     'seq-type=s',
     'results-email=s',
     'job-priority=s',
-    'max_cutoff:i',
+    'max-cutoff:i',
     'no-lims',
     'help|?',
     'man'
@@ -126,8 +126,8 @@ $ecm->sequencing_type($options{'seq-type'});
 $ecm->samples($samples_ref);
 # if max_cutoff was supplied, it will be non-zero, as optional args specified
 # as 'i' are defaulted to 0 by Getopt::Long
-if ($options{'max_cutoff'} != 0) {
-    $ecm->max_cutoff($options{'max_cutoff'});
+if ($options{'max-cutoff'} != 0) {
+    $ecm->max_cutoff($options{'max-cutoff'});
 }
 $ecm->execute;
 
@@ -177,12 +177,20 @@ ConcordanceAnalysisPipeline - perform concordance analysis on SOLiD or Illumina 
 ConcordanceAnalysisPipeline.pl [options] [file ...]
 
 Options:
--config            path to the configuration path
--raw_bs_dir        path to the directory containing the raw birdseed files
--project        the name of the project for these birdseed files
--convert-enc    option to convert genotype encoding
--help            brief help message
--man            full documentation
+
+ run-id-list        path to the file containing list of run IDs
+ prep-result-path   path to write concordance prep results
+ snp-array-dir      path to the directory containing the birdseed files
+ probelist-path     path to the hg18/19 probelist file
+ project-name       project name
+ config-path        path to the configuration file
+ seq-type           illumina or solid
+ results-email      recipeint(s) for judgement results
+ job-priority       maob job priority (normal, high, etc)
+ max-cutoff         cutoff point for concordance analysis
+ no-lims            if enabled, will load all sample info from file, not LIMS
+ help|?             prints a brief help message
+ man                prints a man page
 
 =head1 OPTIONS
 
@@ -223,6 +231,10 @@ Specifiy the [list of] email address, or alias, to send the Judgement results CS
 =item B<--job-priority>
 
 Specify the job priority (queue) for any Moab submissions, which is set by default to "normal".
+
+=item B<--max-cutoff>
+
+Specify the maximum cutoff point for concordance analysis.
 
 =item B<--no-lims>
 
