@@ -6,7 +6,12 @@ use diagnostics;
 #use Data::Dumper;
 use Carp;
 
-if (scalar @ARGV != 6) { die "usage: perl e-Genotyping_concordance.pl analysis_id /comma-delimited/paths/to/csfasta SNP_array /path/to/probelist <sequencing-type[solid|illumina]> self_SNP_array_name\n" }
+if (scalar @ARGV != 7) {
+    die "usage: perl e-Genotyping_concordance.pl analysis_id
+/comma-delimited/paths/to/csfasta SNP_array /path/to/probelist
+<sequencing-type[solid|illumina]> self_SNP_array_name 
+max_cutoff\n";
+}
 
 print "e-Genotyping_concordance.pl called with the following argument list: ".join(',', @ARGV)."\n";
 
@@ -16,7 +21,7 @@ my $SNP_array=$ARGV[2];
 my $probe_file = $ARGV[3];
 my $sequencing_type = $ARGV[4];
 my $self_SNP_array_name = $ARGV[5];
-
+my $max_cutoff = $ARGV[6];
 
 my $con_result = $analysis_id.".birdseed.txt";
 my $frequency_file = $analysis_id.".fre";
