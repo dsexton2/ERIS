@@ -24,16 +24,17 @@ my $error_log = Log::Log4perl->get_logger("errorLogger");
 my %options = ();
 
 GetOptions (
+    \%options,
     'config=s', 
     'raw_bs_dir=s',
     'project=s',
-    'convert-enc=s',
+    'convert-enc',
     'help|?',
     'man'
 ) or pod2usage(1);
 
-pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{help});
-pod2usage(-exitstatus => 0, -verbose => 2) if defined($options{man});
+pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{'help'});
+pod2usage(-exitstatus => 0, -verbose => 2) if defined($options{'man'});
 
 if (!-e $options{'config'}) { croak $options{'config'}.": ".$! }
 if (!-e $options{'raw_bs_dir'}) { croak $options{'raw_bs_dir'}.": ".$! }
@@ -45,7 +46,7 @@ my %run_env = %config;
 @run_env{ keys %options } = values %options;
 Config::General::SaveConfig("/users/p-qc/log/config/config_".POSIX::strftime("%m%d%Y_%H%M%S", localtime).".cfg", \%run_env);
 
-if ($options{'convert-enc'}) {
+if (defined($options{'convert-enc'})) {
     print "Converting Illumina genotype encoding to birdseed encoding ... \n";
     my $convert_geno_enc = Concordance::ConvertRawBirdseedGenotypeEncoding->new;
     $convert_geno_enc->path($options{'raw_bs_dir'});
