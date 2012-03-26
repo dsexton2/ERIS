@@ -11,6 +11,7 @@ use Concordance::GeliToBs;
 use Concordance::RawBsToGeli;
 use Getopt::Long;
 use Pod::Usage;
+use POSIX;
 
 pod2usage(-exitstatus => 0) if (@ARGV == 0);
 
