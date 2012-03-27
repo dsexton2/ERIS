@@ -63,7 +63,7 @@ if (defined($options{'convert-enc'})) {
 print "Converting raw birdseed files to geli files ... \n";
 my $rbtg = Concordance::RawBsToGeli->new;
 $rbtg->config(\%config);
-$rbtg->raw_bs_dir($options{'raw_bs_dir'});
+$rbtg->raw_birdseed_dir($options{'raw_bs_dir'});
 $rbtg->project_name($options{'project'});
 $rbtg->execute;
 
