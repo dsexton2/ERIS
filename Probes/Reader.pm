@@ -48,7 +48,7 @@ sub read_probelist_into_hashref {
 sub align_allele_and_genotype_with_probelist {
     my ($self, $ref_allele, $var_allele, $genotypes_arrayref, $pl_ref, $pl_var) = @_;
 
-    # NB - all vars passed in are REFs
+    # N.B. - all vars passed in are REFs
 
     foreach my $genotype (@$genotypes_arrayref) {
 
@@ -56,7 +56,6 @@ sub align_allele_and_genotype_with_probelist {
             = ($$ref_allele, $$var_allele, $genotype);
         grep { $_ =~ tr/AGCT/TCGA/ }
             ($comp_ref_allele, $comp_var_allele, $comp_genotype);
-
 
         if ($$ref_allele =~ m{\A$$pl_ref\z}) {
             # do nothing; this is here to spell out logic
