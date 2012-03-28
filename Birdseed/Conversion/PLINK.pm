@@ -33,6 +33,13 @@ has 'tfam_file' => (
     documentation => 'Full path to the tfam file',
 );
 
+has 'append_mode' => (
+    is => 'rw',
+    isa => 'Int',
+    default => 0,
+    documentation => 'Appends to birdseed files rather than overwrite',
+);
+
 sub is_valid_tfam_line {
     my ($self, $tfam_line) = @_;
     return ( $$tfam_line =~ m/^(.+)\s(.+)(\s\d){4}$/ );
@@ -157,8 +164,17 @@ sub write_birdseed_file {
             next;
         }
         my @tfam_line_tabbed_vals = split /\t|\s/, $_;
-        open(FOUT_BIRDSEED,
-            ">".$tfam_line_tabbed_vals[0].".tplink.birdseed") or croak $!;
+
+        my $output_birdseed_and_mode =
+            ">".$tfam_line_tabbed_vals[1].".tplink.birdseed";
+
+        # on split/multiple tped, append to birdseeds rather than overwrite
+        if ($self->append_mode != 0) {
+            $output_birdseed_and_mode = ">".$output_birdseed_and_mode;
+        }
+
+        open(FOUT_BIRDSEED, $output_birdseed_and_mode) or croak $!;
+
         foreach my $values_hashref (values %$tped_and_probe_data_hashref) {
             my $snp_data = $values_hashref->{pl_chr}."\t";
             $snp_data .= $values_hashref->{pl_chr_pos}."\t";
