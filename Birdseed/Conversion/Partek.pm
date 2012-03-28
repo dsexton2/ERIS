@@ -39,6 +39,13 @@ has 'birdseed_dir' => (
     documentation => 'Full path to converted birdseed destination',
 );
 
+has 'append_mode' => (
+    is => 'rw',
+    isa => 'Int',
+    default => 0,
+    documentation => 'Appends to birdseed files rather than overwrite',
+);
+
 sub parse_partek_line_into_hashref {
     my ($self, $partek_data_hashref, $partek_line) = @_;
 
@@ -98,16 +105,29 @@ sub align_genotypes_with_probelist {
         probelist_file => $self->probelist_file);
 
     my $probes_data = {};
-    $probes_reader->read_probelist_into_hashref;
+    $probes_reader->read_probelist_into_hashref($probes_data);
 
     foreach my $partek_data (keys %$partek_data_hashref) {
+
+        my ($ref_allele, $var_allele, $genotypes_arrayref, $pl_ref, $pl_var)
+            =   ($partek_data_hashref->{$partek_data}->{ref_allele},
+                 $partek_data_hashref->{$partek_data}->{var_allele},
+                 $partek_data_hashref->{$partek_data}->{genotypes_arrayref},
+                 $probes_data->{$partek_data}->{pl_ref_allele},
+                 $probes_data->{$partek_data}->{pl_var_allele},
+                );
+
         $probes_reader->align_allele_and_genotype_with_probelist(
-            $partek_data_hashref->{$partek_data}->{ref_allele},
-            $partek_data_hashref->{$partek_data}->{var_allele},
-            $partek_data_hashref->{$partek_data}->{genotypes_arrayref},
-            $probes_data->{$partek_data}->{pl_ref_allele},
-            $probes_data->{$partek_data}->{pl_var_allele},
+            \$ref_allele,
+            \$var_allele,
+            $genotypes_arrayref,
+            \$pl_ref,
+            \$pl_var,
         );
+
+        @{ $partek_data_hashref->{$partek_data} }
+            { 'ref_allele', 'var_allele', 'genotypes_arrayref' }
+            = ( $ref_allele, $var_allele, $genotypes_arrayref );
     }
 
 }
@@ -135,16 +155,60 @@ sub get_array_ref_of_samples {
 }
 
 sub write_birdseed_files {
-    my ($self, $samples_arrayref) = @_;
+    my ($self, $samples_arrayref, $partek_data_hashref) = @_;
+
+    my $index = 0;
+    foreach my $sample (@$samples_arrayref) {
+        my $birdseed_filename = $self->birdseed_dir."/"
+            .$sample.".partek.birdseed";
+        my $birdseed_handle;
+        if ($self->append_mode != 0) {
+            $birdseed_handle = IO::File->new($birdseed_filename, ">>")
+                or croak "Failed to open for writing '$birdseed_filename': "
+                    ."$OS_ERROR";
+        }
+        else {
+            $birdseed_handle = IO::File->new($birdseed_filename, ">")
+                or croak "Failed to open for writing '$birdseed_filename': "
+                    ."$OS_ERROR";
+        }
+
+        foreach my $partek_data (values %$partek_data_hashref) {
+            print $birdseed_handle
+                $partek_data->{chromosome}."\t".
+                $partek_data->{map_location}."\t".
+                $partek_data->{ref_allele}."\t".
+                $partek_data->{genotypes_arrayref}->[$index].
+                "\n";
+        }
+
+        undef $birdseed_handle;
+        $index++;
+    }
 }
 
 sub execute {
     my ( $self, ) = @_;
-    # pair sample with genotype
+
+    my $partek_data_hashref = {};
+
     my $partek_file = IO::File->new($self->partek_file, "<")
         or croak "Couldn't open for writing: '$self->partek_file': $OS_ERROR";
 
     my $header_line = <$partek_file>; # just get the line w/ sample names
+
+    my $samples_arrayref = $self->get_array_ref_of_samples($header_line);
+
+    while (my $partek_line = <$partek_file>) {
+        chomp $partek_line;
+        $self->parse_partek_line_into_hashref(
+            $partek_data_hashref, $partek_line
+        );
+    }
+
+    $self->align_genotypes_with_probelist($partek_data_hashref);
+
+    $self->write_birdseed_files($samples_arrayref, $partek_data_hashref);
 
     undef $partek_file;
 
