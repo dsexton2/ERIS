@@ -147,7 +147,7 @@ sub get_array_ref_of_samples {
 
     my $sample_arrayref = ();
 
-    if (my ($samples) = $$header_line =~ m{$SAMPLES_REGEX}) {
+    if ((my $samples = $$header_line) =~ m{$SAMPLES_REGEX}) {
        @$sample_arrayref = split $FIELD_SEPARATOR, $samples;
     }
 
@@ -197,7 +197,7 @@ sub execute {
 
     my $header_line = <$partek_file>; # just get the line w/ sample names
 
-    my $samples_arrayref = $self->get_array_ref_of_samples($header_line);
+    my $samples_arrayref = $self->get_array_ref_of_samples(\$header_line);
 
     while (my $partek_line = <$partek_file>) {
         chomp $partek_line;
