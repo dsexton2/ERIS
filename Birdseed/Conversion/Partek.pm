@@ -147,7 +147,7 @@ sub get_array_ref_of_samples {
 
     my $sample_arrayref = ();
 
-    if ((my $samples = $$header_line) =~ m{$SAMPLES_REGEX}) {
+    if (my ($samples) = $$header_line =~ m{$SAMPLES_REGEX}) {
        @$sample_arrayref = split $FIELD_SEPARATOR, $samples;
     }
 
