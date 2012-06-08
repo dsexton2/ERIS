@@ -47,10 +47,19 @@ sub is_valid_tfam_line {
 
 sub is_valid_tped_line {
     my ($self, $tped_line) = @_;
-    return ( $$tped_line
-        =~ m/^\d+\srs\d+\s\d\s\d+((\s[0-4]){2}|(\s[AGCTagct]){2})+$/ );
-}
+    #    print STDERR "tped line is $$tped_line .... \n";
+    $$tped_line =~ m/^\d+\srs\d+\s\d\s\d+((\s[0-4]){2}|(\s[AGCTagct]){2})+$/ || m/^\d+\s\d+\s\d\s\d+((\s[0-4]){2}|(\s[AGCTagct]){2})+$/;
+    
+    if (defined $$tped_line) { 
+	
+	return($$tped_line);
+    
+    }else {
 
+	print STDERR "tped line does not match ... \n";
+
+    }
+}
 sub _translate_numeric_allele_to_letter {
     my ($self, $tped_numeric_genotypes_ref) = @_;
     grep { $_ =~ tr/1234/ACGT/ } @$tped_numeric_genotypes_ref;
@@ -59,7 +68,7 @@ sub _translate_numeric_allele_to_letter {
 sub parse_tped_line_into_hashref {
     my ($self, $tped_line_ref, $tped_data_hashref) = @_;
     my @tped_columns = split /\s|\t/, $$tped_line_ref;
-
+		#print STDERR "Good Tped line .... \n";
     # tped line: 16 rs7205107 0 48138708 3 3 1 3 (allele pairs continue ... )
     my $rs_id = $tped_columns[1];
     if (!exists $tped_data_hashref->{$rs_id}) {
@@ -72,16 +81,35 @@ sub parse_tped_line_into_hashref {
     # splice the array so all that's left are the allele pairs
     splice(@tped_columns, 0, 4);
 
+    #print STDOUT "size of array is $tped_columns .... \n";
+
+    #foreach (@tped_columns) {
+
+	#print STDOUT "genotype = $_ ... \n";
+
+	#}
+
     # merge each allele pair into one array element
     my $genotypes_ref = ();
     while (@tped_columns) {
         push @$genotypes_ref, ( (shift @tped_columns).(shift @tped_columns) );
+    	#push (my @arr, @$genotypes_ref);
+	#print STDOUT "Array ref genos: @arr ... \n";
     }
     $tped_data_hashref->{$rs_id}->{genotypes_ref} = $genotypes_ref;
+    if (defined($tped_data_hashref->{$rs_id}->{genotypes_ref})) {
+
+	print STDOUT "yay genotype ref exists ... \n";
+
+    } else {
+
+	print STDERR "Boo no genotype ref exists ... \n";
+
+    }
 
     #if necessary, convert numeric alleles to letters
     $self->_translate_numeric_allele_to_letter(
-        $tped_data_hashref->{$rs_id}->{genotypes_ref});
+       $tped_data_hashref->{$rs_id}->{genotypes_ref});
 }
 
 sub read_probelist_into_hashref {
@@ -132,12 +160,14 @@ sub _validate_hash {
     my ( $self, $hashref ) = @_;
     foreach my $rs_id (keys %$hashref) {
         foreach my $attribute (keys %{ $hashref->{$rs_id} }) {
-            if (!defined($hashref->{$rs_id}->{$attribute})) {
-                print STDERR "undefined $attribute for $rs_id, deleting ... \n";
-                delete $hashref->{$rs_id};
-                last;
-            }
-        }
+            print STDOUT "My attribute for $rs_id is: $attribute ... \n";
+						if (!defined($hashref->{$rs_id}->{$attribute})) {
+									print STDERR "undefined $attribute for $rs_id, deleting ... \n";
+									delete $hashref->{$rs_id};
+									last;
+							}
+				}
+				#Does this really need to be here? seems redundant...
         if (defined $hashref->{$rs_id}
             and defined($hashref->{$rs_id}->{genotypes_ref})) {
             if (scalar @{ $hashref->{$rs_id}->{genotypes_ref} } == 0) {
@@ -156,13 +186,19 @@ sub _validate_hash {
 
 sub write_birdseed_file {
     my ( $self, $tped_and_probe_data_hashref ) = @_;
+		#ACE CODE
+		print STDOUT "At top of write_birdseed_file ... \n";
     open(FIN_TFAM, "<".$self->tfam_file) or croak $!;
     my $genotypes_ref_index = 0;
     while (<FIN_TFAM>) {
         chomp $_;
         if (!$self->is_valid_tfam_line(\$_)) {
+						#Ace Code:
+						print STDOUT "NOT valid tfam line \n";
             next;
         }
+				#Ace Code
+				print STDOUT "valid tfam line \n";
         my @tfam_line_tabbed_vals = split /\t|\s/, $_;
 
         my $output_birdseed_and_mode =
@@ -175,6 +211,8 @@ sub write_birdseed_file {
 
         open(FOUT_BIRDSEED, $output_birdseed_and_mode) or croak $!;
 
+				#Ace Code
+				print STDOUT "just opened the output birdseed file, about to inner loop \n";
         foreach my $values_hashref (values %$tped_and_probe_data_hashref) {
             my $snp_data = $values_hashref->{pl_chr}."\t";
             $snp_data .= $values_hashref->{pl_chr_pos}."\t";
@@ -189,6 +227,8 @@ sub write_birdseed_file {
             $snp_data .= $values_hashref->{genotypes_ref}->[$genotypes_ref_index].
                 "\n";
             print FOUT_BIRDSEED $snp_data;
+						#ACE CODE
+						print STDOUT "Wrote out to file \n";
         }
         close(FOUT_BIRDSEED) or carp $!;
         $genotypes_ref_index++;
@@ -203,24 +243,32 @@ sub execute {
     $self->read_probelist_into_hashref($tped_and_probe_data_hashref);
 
     # read in tped file; TODO put this in its own method
-    print STDERR "Reading ".$self->tped_file." ...\n";
+		#ACE CODE replace stderr with stdout
+    print STDOUT "Reading ".$self->tped_file." ...\n";
     open(FIN_TPED, "<".$self->tped_file) or croak $!;
+    print STDERR "tped contains $. lines ... \n";
+    my $line = 0;
     while (<FIN_TPED>) {
         chomp $_;
         if ( $self->is_valid_tped_line(\$_) ) {
-            $self->parse_tped_line_into_hashref(
-                \$_,
-                $tped_and_probe_data_hashref
-            );
+            $line++;
+            print STDOUT "Working on tped line $line ... \n";
+            $self->parse_tped_line_into_hashref(\$_, $tped_and_probe_data_hashref);
+        }else {
+            $line++;
+            print STDERR "tped line $line of $. is invalid ... \n";
+
         }
     }
-
+    print STDERR "parsing complete ...Now validate hash \n";
     $self->_validate_hash($tped_and_probe_data_hashref);
     $self->align_tped_alleles_with_probelist($tped_and_probe_data_hashref);
     $self->_correlate_chromosome_and_position($tped_and_probe_data_hashref);
     $self->write_birdseed_file($tped_and_probe_data_hashref);
 
     close(FIN_TPED) or carp $!;
+		#AceCode
+		print STDOUT "Finished entirely";
 }
 
 no Moose;

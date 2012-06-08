@@ -14,7 +14,7 @@ if (@ARGV != 1) {
 }
 
 if (!Log::Log4perl->initialized()) {
-    Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
+    Log::Log4perl->init("/users/p-qc/production_concordance_pipeline/Concordance/log4perl.cfg");            
 }
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");

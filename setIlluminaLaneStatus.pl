@@ -8,9 +8,10 @@
 # lane_barcode
 # - Sequence name (ie, 111017_SN820_0144_AD0DM2ACXX_1_ID03).
 
-# - EZENOTYPING_FINISHED
+# - EGENO_STATE
 # The Following are name that you should accompany with values:
 # - SAMPLE_EXTERNAL_ID
+# - EGENO_JUDGEMENT
 # - EGENO_AVERAGE_CONCORDANCE
 # - EGENO_SELF_CONCORDANCE
 # - EGENO_BEST_HIT_ID

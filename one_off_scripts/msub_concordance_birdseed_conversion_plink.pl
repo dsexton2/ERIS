@@ -28,7 +28,7 @@ pod2usage(-exitstatus => 0, -verbose => 1) if defined($options{help});
 pod2usage(-exitstatus => 0, -verbose => 2) if defined($options{man});
 pod2usage(-exitstatus => 0, -verbose => 1) if scalar keys %options == 0;
 
-my $cmd = "perl -I /users/p-qc/dev_concordance_pipeline ".$options{'script-path'}." --tfam_file=".$options{'tfam_file'}." --probelist_path=".$options{'probelist_path'}." --tped_file=".$options{'tped_file'}." ";
+my $cmd = "perl -I /users/p-qc/production_concordance_pipeline ".$options{'script-path'}." --tfam_file=".$options{'tfam_file'}." --probelist_path=".$options{'probelist_path'}." --tped_file=".$options{'tped_file'}." ";
 (my $job_prefix = $options{'script-path'}) =~ s/.*\/([^\/]+)\.pl/$1/;
 
 my $scheduler = Concordance::Common::Scheduler->new;

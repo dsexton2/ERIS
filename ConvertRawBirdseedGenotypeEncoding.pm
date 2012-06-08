@@ -10,7 +10,7 @@ use File::Basename;
 use Log::Log4perl;
 
 if (!Log::Log4perl->initialized()) {
-    Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");            
+    Log::Log4perl->init("/users/p-qc/production_concordance_pipeline/Concordance/log4perl.cfg");            
 }
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -47,7 +47,7 @@ sub execute {
     my @files=glob($self->path."/*.txt");
 
     foreach my $file (@files) {
-        my $cmd = "perl /users/p-qc/dev_concordance_pipeline/Concordance/convert_raw_birdseed_genotype_encoding.pl $file";
+        my $cmd = "perl /users/p-qc/production_concordance_pipeline/Concordance/convert_raw_birdseed_genotype_encoding.pl $file";
         my $scheduler = Concordance::Common::Scheduler->new;
         $scheduler->command($cmd);
         $scheduler->job_name_prefix(basename($file)."_toGELI".$$);

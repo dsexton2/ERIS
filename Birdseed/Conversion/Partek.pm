@@ -128,6 +128,12 @@ sub align_genotypes_with_probelist {
         @{ $partek_data_hashref->{$partek_data} }
             { 'ref_allele', 'var_allele', 'genotypes_arrayref' }
             = ( $ref_allele, $var_allele, $genotypes_arrayref );
+    
+	foreach my $type(@$genotypes_arrayref){
+	    print STDERR "$type \n";
+
+	}
+
     }
 
 }
@@ -180,6 +186,8 @@ sub write_birdseed_files {
                 $partek_data->{ref_allele}."\t".
                 $partek_data->{genotypes_arrayref}->[$index].
                 "\n";
+            print STDOUT $partek_data->{genotypes_arrayref}->[$index]."\n";
+
         }
 
         undef $birdseed_handle;

@@ -136,7 +136,7 @@ else {
     open(FIN_SELF_SNP, $SNP_array."/".$self_SNP_array_name.".birdseed");
     while (my $line = <FIN_SELF_SNP>) {
         # line = 2    176194391    A    AA
-        my @line_cols = split(/\t/, $line);
+        my @line_cols = split(/\s/, $line);
         $line_cols[0] =~ s/chr//;
         my @genotype_call = split(//, $line_cols[3]);
         if ((($line_cols[2] ne $genotype_call[0]) and ($line_cols[2] ne $genotype_call[1]))

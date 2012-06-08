@@ -25,7 +25,7 @@ my @wgl_rawbs_files = Concordance::Utils->get_file_list($wgl_rawbs_dir, "txt");
 if ($#wgl_rawbs_files == -1) { die "No .txt files found in $wgl_rawbs_dir\n" }
 
 foreach my $wgl_rawbs_file (@wgl_rawbs_files) {
-    my $cmd = "perl /users/p-qc/dev_concordance_pipeline/Concordance/one_off_scripts/convert_wgl_raw.pl $wgl_rawbs_file $probelist_file";
+    my $cmd = "perl /users/p-qc/production_concordance_pipeline/Concordance/one_off_scripts/convert_wgl_raw.pl $wgl_rawbs_file $probelist_file";
     my $scheduler = Concordance::Common::Scheduler->new;
     $scheduler->command($cmd);
     $scheduler->job_name_prefix(basename($wgl_rawbs_file)."_wgl_rawbs_convert".$$);

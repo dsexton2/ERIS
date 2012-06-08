@@ -66,7 +66,7 @@ $script_src .= "\n\n".
     "pod2usage(-exitstatus => 0, -verbose => 1) if scalar keys \%options == 0;\n".
     "\n";
 
-my $cmd = "\"perl -I /users/p-qc/dev_concordance_pipeline \".\$options{'script-path'}.\" ";
+my $cmd = "\"perl -I /users/p-qc/production_concordance_pipeline \".\$options{'script-path'}.\" ";
 
 for my $attribute ( $meta->get_all_attributes ) {
     $cmd .= "--".$attribute->name."=\".\$options{'".$attribute->name."'}.\" ";

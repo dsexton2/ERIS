@@ -7,7 +7,7 @@ use Concordance::Common::Scheduler;
 
 if ($#ARGV != 0) { die "Usage: perl msub_build_partial_freq.pl /path/to/xml/file.xml\n" }
 
-my $command = "/users/p-qc/dev_concordance_pipeline/Concordance/Frequency/build_partial_freq.pl ".$ARGV[0];
+my $command = "/users/p-qc/production_concordance_pipeline/Concordance/Frequency/build_partial_freq.pl ".$ARGV[0];
 (my $job_name = $ARGV[0]) =~ s/.*\/([^\/]+)\.xml/$1/;
 
 my $scheduler = Concordance::Common::Scheduler->new;

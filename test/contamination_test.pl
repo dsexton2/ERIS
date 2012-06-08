@@ -26,7 +26,7 @@ my $contamination_source_file = $ARGV[1];
 my $snp_array_dir = $ARGV[2];
 my $probe_list_path = $ARGV[3];
 
-my %config = new Config::General("/users/p-qc/dev_concordance_pipeline/tertiary_pipeline.cfg")->getall;
+my %config = new Config::General("/users/p-qc/production_concordance_pipeline/tertiary_pipeline.cfg")->getall;
 my $working_dir = "/users/p-qc/testdata_pipeline/spike_in/";
 my @test_thresholds = qw(318000 1590000 3180000 15900000 31800000);
 my @csfasta_files;

@@ -10,7 +10,7 @@ if ($#ARGV != 1) { die "usage: perl msub_hapmap.pl /path/to/prefrequency/probeli
 my $prefrequency_probelist = $ARGV[0];
 my $probelist = $ARGV[1];
 
-my $command = "/users/p-qc/dev_concordance_pipeline/Concordance/Frequency/hapmap.pl ".
+my $command = "/users/p-qc/production_concordance_pipeline/Concordance/Frequency/hapmap.pl ".
     $prefrequency_probelist." ".$probelist;
 my $job_name = "add_freq_to_probelist";
 

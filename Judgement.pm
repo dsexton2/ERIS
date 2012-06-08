@@ -31,7 +31,7 @@ use Lingua::EN::Numbers::Ordinate;
 use Log::Log4perl;
 
 if (!Log::Log4perl->initialized()) {
-    Log::Log4perl->init("/users/p-qc/dev_concordance_pipeline/Concordance/log4perl.cfg");
+    Log::Log4perl->init("/users/p-qc/production_concordance_pipeline/Concordance/log4perl.cfg");
 }
 my $error_log = Log::Log4perl->get_logger("errorLogger");
 my $debug_log = Log::Log4perl->get_logger("debugLogger");
@@ -240,11 +240,11 @@ sub __submit_report_to_LIMS__ {
 
     foreach my $judgement (values %$judgement_hashref) {
         my $arg_string = $judgement->{sample}->run_id." ".
-            "EZENOTYPING_FINISHED ";
+            "EGENO_STATE ";
         $arg_string .= "SAMPLE_EXTERNAL_ID ".$judgement->{sample}->sample_id." ".
             "EGENO_AVERAGE_CONCORDANCE ".$judgement->{average}." ".
             "EGENO_SELF_CONCORDANCE ".$judgement->{self_concordance}." ".
-            "EGENO_STATE ".$judgement->{judgement_state}." ";
+            "EGENO_JUDGEMENT \'".$judgement->{judgement_state}."\' ";
         my @best_hit_ids = ();
         my $best_hit_count = 1;
         foreach my $best_hit_id (sort { $judgement->{concordance_pairs}->{$b} <=> $judgement->{concordance_pairs}->{$a} } (keys %{ $judgement->{concordance_pairs} })) {
@@ -258,7 +258,7 @@ sub __submit_report_to_LIMS__ {
             "EGENO_SNPS_PASSING_MATCH ".$judgement->{egeno_snps_passing_match}." ".
             "PERCENT_CONTAMINATION ".$judgement->{contamination};
         $debug_log->debug("Args for setIlluminaLaneStatus.pl: ".$arg_string."\n");
-        eval { `perl /users/p-qc/dev_concordance_pipeline/Concordance/setIlluminaLaneStatus.pl $arg_string` };
+        eval { `perl /users/p-qc/production_concordance_pipeline/Concordance/setIlluminaLaneStatus.pl $arg_string` };
         if ($@) { $error_log->error($@."\n") }
     }
 }

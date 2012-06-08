@@ -49,9 +49,11 @@ sub align_allele_and_genotype_with_probelist {
     my ($self, $ref_allele, $var_allele, $genotypes_arrayref, $pl_ref, $pl_var) = @_;
 
     # N.B. - all vars passed in are REFs
+    my $geno_size = @$genotypes_arrayref;
+    for (my $i=0;$i<$geno_size;$i++) {
+	my $genotype = @$genotypes_arrayref[$i];
 
-    foreach my $genotype (@$genotypes_arrayref) {
-
+	#print STDERR "$genotype \n";
         my ($comp_ref_allele, $comp_var_allele, $comp_genotype)
             = ($$ref_allele, $$var_allele, $genotype);
         grep { $_ =~ tr/AGCT/TCGA/ }
@@ -62,18 +64,25 @@ sub align_allele_and_genotype_with_probelist {
         }
         elsif ($$ref_allele =~ m{\A$$pl_var\z}) {
             $$ref_allele = $$var_allele;
-            $genotype = reverse $genotype;
         }
         elsif ($comp_ref_allele =~ m{\A$$pl_ref\z}) {
             $$ref_allele = $comp_ref_allele;
-            $genotype = $comp_genotype;
+            $genotype = "3".$comp_genotype;
+	    #print STDERR "$genotype ";
         }
         elsif ($comp_ref_allele =~ m{\A$$pl_var\z}) {
             $$ref_allele = $comp_var_allele;
-            $genotype = reverse $comp_genotype;
+            $genotype = "4".$comp_genotype;
+	    #print STDERR " $genotype ";
         }
+	splice(@$genotypes_arrayref, $i, 1, $genotype);
+	#print STDERR "$$ref_allele, $genotype \n";
     }
+   foreach my $type(@$genotypes_arrayref){
 
+       #print STDOUT "$type \n";
+
+   }
 }
 
 no Moose;
